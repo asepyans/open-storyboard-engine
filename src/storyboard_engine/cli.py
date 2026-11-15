@@ -34,7 +34,7 @@ def main() -> None:
     storyboard = build_storyboard(
         script, args.duration, args.scene_seconds,
         args.title or args.script.stem.replace("_", " ").title(),
-        preset="custom" if preset_config is not None else args.preset, preset_config=preset_config, style=args.style, aspect_ratio=args.aspect_ratio,
+        preset="custom" if preset_config is not None else args.preset, preset_config=preset_config, preset_label=preset_name if preset_config is not None else None, style=args.style, aspect_ratio=args.aspect_ratio,
         mood=args.mood, lighting=args.lighting, palette=args.palette, shot_types=shot_types,
     )
     for path in write_exports(storyboard, args.out):
