@@ -1,6 +1,6 @@
 import pytest
 
-from storyboard_engine.core import build_storyboard, export_markdown
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_markdown
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -18,17 +18,12 @@ def test_scene_timing_ends_at_requested_duration():
 
 
 def test_scene_intervals_are_contiguous_and_positive():
-    result = build_storyboard(
-        "A.\n\nB.\n\nC.\n\nD.",
-        duration_seconds=4,
-        scene_seconds=1,
-    )
+    result = build_storyboard("A.\n\nB.\n\nC.\n\nD.", duration_seconds=4, scene_seconds=1)
     scenes = result["scenes"]
     assert len(scenes) <= 4
     assert scenes[0]["start_seconds"] == 0
     assert all(scene["duration_seconds"] >= 1 for scene in scenes)
-    assert all(left["end_seconds"] == right["start_seconds"]
-               for left, right in zip(scenes, scenes[1:]))
+    assert all(left["end_seconds"] == right["start_seconds"] for left, right in zip(scenes, scenes[1:]))
     assert scenes[-1]["end_seconds"] == 4
 
 
@@ -67,6 +62,7 @@ def test_visual_style_profile_adds_cinematic_prompt_details():
         20,
         10,
         "Megalodon",
+        preset="documentary",
         style="cinematic documentary",
         aspect_ratio="16:9",
         mood="ominous",
@@ -82,6 +78,50 @@ def test_visual_style_profile_adds_cinematic_prompt_details():
     assert "volumetric blue light" in scene["visual_prompt"]
     assert "deep navy and amber" in scene["visual_prompt"]
     assert scene["shot_type"] == "wide establishing shot"
+
+
+def test_all_named_visual_presets_are_available():
+    assert {"documentary", "dark-cinematic", "photorealistic", "2d-animation", "vertical-shorts"} <= set(VISUAL_PRESETS)
+
+
+@pytest.mark.parametrize(
+    ("preset", "expected_style", "expected_ratio"),
+    [
+        ("documentary", "cinematic documentary", "16:9"),
+        ("dark-cinematic", "dark cinematic realism", "16:9"),
+        ("photorealistic", "photorealistic documentary photography", "16:9"),
+        ("2d-animation", "clean 2D animated illustration", "9:16"),
+        ("vertical-shorts", "cinematic vertical documentary", "9:16"),
+    ],
+)
+def test_preset_defaults_are_applied(preset, expected_style, expected_ratio):
+    data = build_storyboard("Narasi singkat.", duration_seconds=20, preset=preset)
+    profile = data["visual_profile"]
+    assert profile["preset"] == preset
+    assert profile["style"] == expected_style
+    assert profile["aspect_ratio"] == expected_ratio
+    assert len(profile["shot_types"]) >= 1
+
+
+def test_explicit_options_override_preset_values():
+    data = build_storyboard(
+        "Narasi singkat.",
+        duration_seconds=20,
+        preset="dark-cinematic",
+        style="custom style",
+        aspect_ratio="1:1",
+        mood="calm",
+    )
+    profile = data["visual_profile"]
+    assert profile["style"] == "custom style"
+    assert profile["aspect_ratio"] == "1:1"
+    assert profile["mood"] == "calm"
+    assert profile["lighting"] == VISUAL_PRESETS["dark-cinematic"]["lighting"]
+
+
+def test_unknown_preset_is_rejected():
+    with pytest.raises(ValueError, match="Unknown preset"):
+        build_storyboard("Narasi.", preset="not-a-preset")
 
 
 def test_invalid_aspect_ratio_rejected():
