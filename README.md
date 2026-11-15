@@ -40,6 +40,24 @@ storyboard-engine build examples/megalodon_id.txt \
 
 Optional flags: `--style`, `--aspect-ratio` (`16:9`, `9:16`, `1:1`), `--mood`, `--lighting`, `--palette`, and `--shot-types` (comma-separated override list).
 
+
+## Custom preset files
+
+You can save your own visual direction in a JSON file and reuse it without editing Python source. A complete preset file contains a name and these fields: \`style\`, \`aspect_ratio\`, \`mood\`, \`lighting\`, \`palette\`, and a non-empty \`shot_types\` list. Aspect ratio must be \`16:9\`, \`9:16\`, or \`1:1\`; unknown or missing fields are rejected with a helpful validation error.
+
+Example preset included in this repository: \`examples/presets/thinkman-investigative.json\`.
+
+Run the engine with your preset file:
+
+\`\`\`bash
+storyboard-engine build examples/megalodon_id.txt \\
+  --duration 90 --scene-seconds 10 \\
+  --preset-file examples/presets/thinkman-investigative.json \\
+  --out output
+\`\`\`
+
+Custom preset files cannot be combined with \`--preset\` in the same command. You can still use individual CLI flags such as \`--mood\` or \`--palette\` to override a loaded preset's values. The preset's \`name\` is included in the storyboard's visual profile metadata.
+
 ## Exports
 
 - **JSON**: structured project, visual profile, scene records, timestamps.
