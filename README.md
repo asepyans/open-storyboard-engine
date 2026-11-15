@@ -1,6 +1,6 @@
 # Open Storyboard Engine
 
-A lightweight, provider-agnostic Python CLI that converts narration scripts into a structured storyboard with scene timing, cinematic visual direction, and exports to JSON, Markdown, and CSV. The core is deterministic and requires no AI API key.
+A lightweight, provider-agnostic Python CLI that converts narration scripts into a structured storyboard with scene timing, cinematic visual direction, and exports to JSON, Markdown, CSV, and SRT subtitles. The core is deterministic and requires no AI API key.
 
 ## Quick start
 
@@ -10,11 +10,9 @@ storyboard-engine build examples/megalodon_id.txt --duration 90 --scene-seconds 
 pytest
 ```
 
-The command creates `output/storyboard.json`, `output/storyboard.md`, and `output/storyboard.csv`.
+The command creates `output/storyboard.json`, `output/storyboard.md`, `output/storyboard.csv`, and `output/subtitles.srt`.
 
 ## Visual presets
-
-Choose a named preset to get a cohesive style, mood, lighting, palette, aspect ratio, and shot sequence:
 
 | Preset | Look | Default ratio |
 | --- | --- | --- |
@@ -23,57 +21,44 @@ Choose a named preset to get a cohesive style, mood, lighting, palette, aspect r
 | `photorealistic` | Realistic documentary photography | 16:9 |
 | `2d-animation` | Clean expressive 2D illustration | 9:16 |
 | `vertical-shorts` | High-impact vertical documentary | 9:16 |
-| `custom` | Starts with documentary values; customize individual flags | 16:9 |
+| `custom` | Documentary base with user-specified overrides | 16:9 |
 
-Example: use the vertical shorts preset
+Vertical short sample:
+
+```bash
+storyboard-engine build examples/megalodon_id.txt --duration 90 --scene-seconds 10 --preset vertical-shorts --out output
+```
+
+Customized cinematic sample:
 
 ```bash
 storyboard-engine build examples/megalodon_id.txt \
-  --duration 90 \
-  --scene-seconds 10 \
-  --preset vertical-shorts \
-  --out output
+  --duration 90 --preset dark-cinematic --aspect-ratio 9:16 \
+  --mood "mysterious underwater dread" --lighting "volumetric blue light" \
+  --palette "deep navy and amber" --out output
 ```
 
-Example: override preset values for a custom cinematic look
+Optional flags: `--style`, `--aspect-ratio` (`16:9`, `9:16`, `1:1`), `--mood`, `--lighting`, `--palette`, and `--shot-types` (comma-separated override list).
 
-```bash
-storyboard-engine build examples/megalodon_id.txt \
-  --duration 90 \
-  --preset dark-cinematic \
-  --aspect-ratio 9:16 \
-  --mood "mysterious underwater dread" \
-  --lighting "volumetric blue light" \
-  --palette "deep navy and amber" \
-  --out output
-```
+## Exports
 
-### Optional profile flags
-
-- `--style`: visual medium/style
-- `--aspect-ratio`: `16:9`, `9:16`, or `1:1`
-- `--mood`: atmosphere / emotional tone
-- `--lighting`: lighting direction and quality
-- `--palette`: color palette description
-- `--shot-types`: comma-separated shot list; scenes rotate through it, replacing preset shot types
-
-Explicit flags override values from the selected preset. JSON contains the complete project/profile, Markdown is readable for review, and CSV gives scene rows with timestamps, narration, shot types, prompts, on-screen text, and SFX for spreadsheet/editor workflows.
+- **JSON**: structured project, visual profile, scene records, timestamps.
+- **Markdown**: human-readable storyboard review.
+- **CSV**: one row per scene with timing, narration, shot type, prompt, screen text, and SFX.
+- **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format. Note that scene-level cue timings are approximate; for word-level subtitle timing, use a dedicated alignment tool.
 
 ## How it works
 
-- Split the input script into paragraphs.
-- Group narration toward the target scene length (estimated at 130 words/minute).
-- Allocate integer scene durations proportionally, ensuring contiguous timestamps and exact total duration.
-- Generate deterministic visual prompt drafts using the selected preset and shot types.
-- Export structured JSON, readable Markdown, and scene-oriented CSV.
+1. Split script into paragraphs and group narration toward the target scene length (estimated at 130 words/minute).
+2. Allocate integer scene durations proportionally, with contiguous timestamps and the exact requested total duration.
+3. Generate deterministic visual prompt drafts based on preset and shot sequence.
+4. Export JSON, Markdown, CSV, and SRT.
 
 ## CLI
 
 ```bash
 storyboard-engine build SCRIPT --duration 90 --scene-seconds 10 --preset documentary --out output
 ```
-
-Arguments: `--duration` (total video duration, seconds), `--scene-seconds` (target scene duration), `--title` (optional project title), `--out` (output folder), `--preset` (visual preset), plus the optional profile flags above.
 
 ## Development
 
@@ -84,13 +69,10 @@ pytest
 
 ## Roadmap
 
-- [x] Script-to-scene parsing
-- [x] Timing estimation and scene metadata
-- [x] JSON and Markdown export
-- [x] CSV scene export
-- [x] CLI and unit tests
-- [x] Cinematic visual profile and shot rotation
-- [x] Named visual presets
+- [x] Script-to-scene parsing and timing
+- [x] JSON / Markdown / CSV exports
+- [x] SRT subtitle export
+- [x] CLI, visual profiles, named presets, and tests
 - [ ] Optional custom preset files
 - [ ] Editing-tool import/export adapters
 - [ ] Community language presets
