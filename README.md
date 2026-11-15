@@ -64,13 +64,14 @@ Custom preset files cannot be combined with \`--preset\` in the same command. Yo
 - **Markdown**: human-readable storyboard review.
 - **CSV**: one row per scene with timing, narration, shot type, prompt, screen text, and SFX.
 - **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format. Scene-level cue timings are approximate; use a dedicated alignment tool for word-level timing.\n- **Premiere XML**: FCP7/XMEML v5 sequence with per-scene markers containing narration, visual prompt, screen text, and SFX. This provides timeline markers for review, not generated video clips.
+- **Asset manifest JSON**: per-scene asset slots with stable image/video filenames, scene timing, narration, visual prompts, aspect ratio, and planned status. The manifest describes placeholders; it does not generate the media files.
 
 ## How it works
 
 1. Split script into paragraphs and group narration toward the target scene length (estimated at 130 words/minute).
 2. Allocate integer scene durations proportionally, with contiguous timestamps and the exact requested total duration.
 3. Generate deterministic visual prompt drafts based on preset and shot sequence.
-4. Export JSON, Markdown, CSV, and SRT.
+4. Export JSON, Markdown, CSV, SRT, Premiere XML, and the asset manifest.
 
 ## CLI
 
@@ -91,7 +92,8 @@ pytest
 - [x] JSON / Markdown / CSV exports
 - [x] SRT subtitle export\n- [x] Premiere-compatible XML timeline marker export
 - [x] CLI, visual profiles, named presets, and tests
-- [ ] Optional custom preset files
+- [x] Optional custom preset files
+- [x] Per-scene asset manifest with predictable filenames
 - [ ] Editing-tool import/export adapters
 - [ ] Community language presets
 
