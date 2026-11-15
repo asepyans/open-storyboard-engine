@@ -5,6 +5,7 @@ from pathlib import Path
 from .core import (
     VISUAL_PRESETS,
     build_storyboard,
+    create_project_bundle,
     initialize_asset_folders,
     load_preset_file,
     validate_asset_manifest,
@@ -36,7 +37,16 @@ def main() -> None:
     validate.add_argument("manifest", type=Path, help="Path to asset_manifest.json")
     validate.add_argument("--project-root", type=Path, default=Path("."), help="Root directory used to resolve manifest asset paths")
 
+    bundle = subparsers.add_parser("bundle", help="Package project exports and available assets into a ZIP")
+    bundle.add_argument("output_dir", type=Path, help="Storyboard output directory")
+    bundle.add_argument("--file", type=Path, default=None, help="Optional destination ZIP file path")
+
     args = parser.parse_args()
+    if args.command == "bundle":
+        archive_path = create_project_bundle(args.output_dir, args.file)
+        print(f"Created project bundle: {archive_path}")
+        return
+
     if args.command == "validate-assets":
         manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
         report = validate_asset_manifest(manifest, args.project_root)
