@@ -405,16 +405,16 @@ def test_create_project_bundle_rejects_directory_as_destination(tmp_path):
 
 
 def test_vtt_export_has_header_and_webvtt_timestamps():
-    data = build_storyboard("Opening narration.\\n\\nSecond narration.", duration_seconds=20, scene_seconds=1)
+    data = build_storyboard("Opening narration.\n\nSecond narration.", duration_seconds=20, scene_seconds=1)
     vtt = export_vtt(data)
-    assert vtt.startswith("WEBVTT\\n")
-    assert "00:00:00.000 --> 00:00:10.000\\nOpening narration." in vtt
-    assert "00:00:10.000 --> 00:00:20.000\\nSecond narration." in vtt
+    assert vtt.startswith("WEBVTT\n")
+    assert "00:00:00.000 --> 00:00:10.000\nOpening narration." in vtt
+    assert "00:00:10.000 --> 00:00:20.000\nSecond narration." in vtt
 
 
 def test_vtt_export_skips_empty_narration_and_keeps_header():
     data = {"scenes": [{"scene": 1, "start_seconds": 0, "end_seconds": 5, "narration": " "}]}
-    assert export_vtt(data) == "WEBVTT\\n"
+    assert export_vtt(data) == "WEBVTT\n"
 
 
 def test_write_exports_creates_vtt_file(tmp_path):
