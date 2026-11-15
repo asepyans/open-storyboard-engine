@@ -295,3 +295,61 @@ def export_fcp7_xml(storyboard: dict, fps: int = 25) -> str:
 
     ET.indent(root, space="  ")
     return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode") + "\n"
+
+
+def validate_asset_manifest(manifest: dict, project_root: str | Path) -> dict:
+    """Validate manifest structure and report which referenced media files exist."""
+    if not isinstance(manifest, dict):
+        raise ValueError("manifest must be a JSON object")
+    if manifest.get("schema_version") != "1.0":
+        raise ValueError("unsupported or missing manifest schema_version")
+    assets = manifest.get("assets")
+    if not isinstance(assets, list):
+        raise ValueError("manifest 'assets' must be a list")
+    root = Path(project_root).resolve()
+    checked = []
+    for index, asset in enumerate(assets, start=1):
+        if not isinstance(asset, dict):
+            raise ValueError(f"asset entry {index} must be an object")
+        scene = asset.get("scene")
+        if not isinstance(scene, int) or scene < 1:
+            raise ValueError(f"asset entry {index} has invalid scene number")
+        paths = {}
+        for field in ("image_asset", "video_asset"):
+            raw = asset.get(field)
+            if not isinstance(raw, str) or not raw.strip():
+                raise ValueError(f"asset entry {index} is missing '{field}'")
+            relative = Path(raw)
+            if relative.is_absolute() or ".." in relative.parts:
+                raise ValueError(f"asset entry {index} has unsafe path in '{field}'")
+            resolved = (root / relative).resolve()
+            if resolved != root and root not in resolved.parents:
+                raise ValueError(f"asset entry {index} path escapes project root")
+            paths[field] = {"path": raw, "exists": resolved.is_file()}
+        checked.append({"scene": scene, "image": paths["image_asset"], "video": paths["video_asset"]})
+    missing_images = sum(not entry["image"]["exists"] for entry in checked)
+    missing_videos = sum(not entry["video"]["exists"] for entry in checked)
+    return {
+        "project_title": manifest.get("project_title", "Untitled Storyboard"),
+        "scene_count": len(checked),
+        "checked_assets": len(checked) * 2,
+        "present_assets": len(checked) * 2 - missing_images - missing_videos,
+        "missing_images": missing_images,
+        "missing_videos": missing_videos,
+        "assets": checked,
+    }
+
+
+def initialize_asset_folders(manifest: dict, project_root: str | Path) -> list[Path]:
+    """Create standard project asset directories for a validated manifest."""
+    validate_asset_manifest(manifest, project_root)
+    root = Path(project_root)
+    folders = [
+        root / "assets" / "images",
+        root / "assets" / "videos",
+        root / "assets" / "audio",
+        root / "assets" / "fonts",
+    ]
+    for folder in folders:
+        folder.mkdir(parents=True, exist_ok=True)
+    return folders
