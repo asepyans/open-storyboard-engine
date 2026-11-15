@@ -20,7 +20,7 @@ def main() -> None:
     build.add_argument("--mood", default=None)
     build.add_argument("--lighting", default=None)
     build.add_argument("--palette", default=None)
-    build.add_argument("--shot-types", default=None, help="Comma-separated shot types; overrides preset shot list")
+    build.add_argument("--shot-types", default=None, help="Comma-separated shot types; overrides preset shot list")\n    build.add_argument("--fps", type=int, choices=[24, 25, 30, 50, 60], default=25, help="Frame rate for Premiere XML export")
     args = parser.parse_args()
 
     script = args.script.read_text(encoding="utf-8")
@@ -37,7 +37,7 @@ def main() -> None:
         preset="custom" if preset_config is not None else args.preset, preset_config=preset_config, preset_label=preset_name if preset_config is not None else None, style=args.style, aspect_ratio=args.aspect_ratio,
         mood=args.mood, lighting=args.lighting, palette=args.palette, shot_types=shot_types,
     )
-    for path in write_exports(storyboard, args.out):
+    for path in write_exports(storyboard, args.out, fps=args.fps):
         print(f"Exported: {path}")
 
 
