@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -243,3 +243,24 @@ def test_custom_preset_reports_invalid_json(tmp_path):
     preset_file.write_text("{not valid json", encoding="utf-8")
     with pytest.raises(ValueError, match="Could not read preset file"):
         load_preset_file(preset_file)
+
+
+def test_fcp7_xml_export_contains_sequence_rate_and_scene_markers():
+    data = build_storyboard("Opening narration.\\n\\nSecond narration.", duration_seconds=20, scene_seconds=1, title="XML Demo")
+    xml = export_fcp7_xml(data, fps=25)
+    import xml.etree.ElementTree as ET
+    root = ET.fromstring(xml)
+    sequence = root.find("sequence")
+    assert sequence is not None
+    assert sequence.findtext("name") == "XML Demo"
+    assert sequence.findtext("duration") == "500"
+    assert sequence.findtext("rate/timebase") == "25"
+    markers = sequence.findall("marker")
+    assert len(markers) == data["scene_count"]
+    assert "VISUAL PROMPT:" in markers[0].findtext("comment")
+
+
+def test_fcp7_xml_rejects_invalid_fps():
+    data = build_storyboard("Narration.", duration_seconds=10)
+    with pytest.raises(ValueError, match="fps"):
+        export_fcp7_xml(data, fps=0)
