@@ -233,15 +233,27 @@ def export_asset_manifest(storyboard: dict) -> dict:
 def write_exports(storyboard: dict, output_dir: str | Path, fps: int = 25) -> tuple[Path, ...]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    json_path, markdown_path, csv_path, srt_path, xml_path, manifest_path, image_prompts_json_path, image_prompts_md_path = (output / "storyboard.json", output / "storyboard.md", output / "storyboard.csv", output / "subtitles.srt", output / "storyboard_premiere.xml", output / "asset_manifest.json", output / "image_prompts.json", output / "image_prompts.md")
+    json_path = output / "storyboard.json"
+    markdown_path = output / "storyboard.md"
+    csv_path = output / "storyboard.csv"
+    srt_path = output / "subtitles.srt"
+    xml_path = output / "storyboard_premiere.xml"
+    manifest_path = output / "asset_manifest.json"
+    prompts_json_path = output / "image_prompts.json"
+    prompts_markdown_path = output / "image_prompts.md"
+
     json_path.write_text(json.dumps(storyboard, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_path.write_text(export_markdown(storyboard), encoding="utf-8")
     csv_path.write_text(export_csv(storyboard), encoding="utf-8-sig")
     srt_path.write_text(export_srt(storyboard), encoding="utf-8-sig")
     xml_path.write_text(export_fcp7_xml(storyboard, fps=fps), encoding="utf-8")
     manifest_path.write_text(json.dumps(export_asset_manifest(storyboard), ensure_ascii=False, indent=2), encoding="utf-8")
-    return json_path, markdown_path, csv_path, srt_path, xml_path, manifest_path
-
+    prompts_json_path.write_text(json.dumps(export_image_prompt_batch(storyboard), ensure_ascii=False, indent=2), encoding="utf-8")
+    prompts_markdown_path.write_text(export_image_prompt_batch_markdown(storyboard), encoding="utf-8")
+    return (
+        json_path, markdown_path, csv_path, srt_path, xml_path, manifest_path,
+        prompts_json_path, prompts_markdown_path,
+    )
 
 def export_fcp7_xml(storyboard: dict, fps: int = 25) -> str:
     """Export an XMEML v5 sequence with scene markers for Premiere Pro / compatible NLEs."""
