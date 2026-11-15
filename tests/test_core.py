@@ -59,3 +59,36 @@ def test_markdown_export_contains_scene_content():
     markdown = export_markdown(data)
     assert "# Demo" in markdown
     assert "**Visual prompt:**" in markdown
+
+
+def test_visual_style_profile_adds_cinematic_prompt_details():
+    data = build_storyboard(
+        "Seekor hiu berenang di laut dalam.",
+        20,
+        10,
+        "Megalodon",
+        style="cinematic documentary",
+        aspect_ratio="16:9",
+        mood="ominous",
+        lighting="volumetric blue light",
+        palette="deep navy and amber",
+        shot_types=["wide establishing shot", "close-up"],
+    )
+    scene = data["scenes"][0]
+    assert data["visual_profile"]["style"] == "cinematic documentary"
+    assert data["visual_profile"]["aspect_ratio"] == "16:9"
+    assert "cinematic documentary" in scene["visual_prompt"]
+    assert "16:9" in scene["visual_prompt"]
+    assert "volumetric blue light" in scene["visual_prompt"]
+    assert "deep navy and amber" in scene["visual_prompt"]
+    assert scene["shot_type"] == "wide establishing shot"
+
+
+def test_invalid_aspect_ratio_rejected():
+    with pytest.raises(ValueError):
+        build_storyboard("Narasi.", aspect_ratio="4:3")
+
+
+def test_invalid_shot_types_rejected():
+    with pytest.raises(ValueError):
+        build_storyboard("Narasi.", shot_types=[])
