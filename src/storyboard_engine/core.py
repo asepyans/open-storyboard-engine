@@ -90,6 +90,7 @@ def build_storyboard(
     mood: str | None = None, lighting: str | None = None,
     palette: str | None = None, shot_types: list[str] | tuple[str, ...] | None = None,
     preset_config: dict | None = None,
+    preset_label: str | None = None,
 ) -> dict:
     """Build a timed storyboard with deterministic cinematic visual prompts."""
     if duration_seconds <= 0:
