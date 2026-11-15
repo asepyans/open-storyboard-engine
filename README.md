@@ -95,12 +95,29 @@ Each storyboard build also writes a batch prompt sheet:
 
 The prompt export is provider-agnostic. It prepares prompt text and metadata; it does not call an image-generation API or create image files. Save generated images to the matching path under \`output/assets/images/\`.
 
+
+## Portable project ZIP bundle
+
+After building a storyboard, package the exports and any media files already present into a single ZIP:
+
+\`\`\`bash
+storyboard-engine bundle output
+\`\`\`
+
+By default, the archive is written to \`output/storyboard_bundle.zip\`. To choose a different destination:
+
+\`\`\`bash
+storyboard-engine bundle output --file deliverables/ocean-storyboard.zip
+\`\`\`
+
+The bundle preserves relative paths, including the generated JSON/Markdown/CSV/SRT/XML files, manifest, prompt sheets, and available files under the asset folders. It does not generate missing media.
+
 ## How it works
 
 1. Split script into paragraphs and group narration toward the target scene length (estimated at 130 words/minute).
 2. Allocate integer scene durations proportionally, with contiguous timestamps and the exact requested total duration.
 3. Generate deterministic visual prompt drafts based on preset and shot sequence.
-4. Export JSON, Markdown, CSV, SRT, Premiere XML, and the asset manifest.\n5. Initialize the standard media folders and allow validation of the manifest against files on disk.
+4. Export JSON, Markdown, CSV, SRT, Premiere XML, the asset manifest, and batch image prompt sheets.\n5. Initialize standard media folders, validate the manifest, and optionally package the project into a portable ZIP.
 
 ## CLI
 
@@ -123,7 +140,7 @@ pytest
 - [x] Premiere-compatible XML timeline marker export
 - [x] CLI, visual profiles, named presets, and tests
 - [x] Optional custom preset files
-- [x] Per-scene asset manifest with predictable filenames\n- [x] Batch image prompt JSON/Markdown export
+- [x] Per-scene asset manifest with predictable filenames\n- [x] Batch image prompt JSON/Markdown export\n- [x] Portable ZIP project bundle
 - [ ] Editing-tool import/export adapters
 - [ ] Community language presets
 
