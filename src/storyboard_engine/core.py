@@ -189,12 +189,66 @@ def export_srt(storyboard: dict) -> str:
     return "\n\n".join(cues) + ("\n" if cues else "")
 
 
-def write_exports(storyboard: dict, output_dir: str | Path) -> tuple[Path, Path, Path, Path]:
+def write_exports(storyboard: dict, output_dir: str | Path, fps: int = 25) -> tuple[Path, Path, Path, Path, Path]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    json_path, markdown_path, csv_path, srt_path = (output / "storyboard.json", output / "storyboard.md", output / "storyboard.csv", output / "subtitles.srt")
+    json_path, markdown_path, csv_path, srt_path, xml_path = (output / "storyboard.json", output / "storyboard.md", output / "storyboard.csv", output / "subtitles.srt", output / "storyboard_premiere.xml")
     json_path.write_text(json.dumps(storyboard, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_path.write_text(export_markdown(storyboard), encoding="utf-8")
     csv_path.write_text(export_csv(storyboard), encoding="utf-8-sig")
     srt_path.write_text(export_srt(storyboard), encoding="utf-8-sig")
     return json_path, markdown_path, csv_path, srt_path
+
+
+def export_fcp7_xml(storyboard: dict, fps: int = 25) -> str:
+    """Export an XMEML v5 sequence with scene markers for Premiere Pro / compatible NLEs."""
+    import xml.etree.ElementTree as ET
+
+    if not isinstance(fps, int) or fps <= 0:
+        raise ValueError("fps must be a positive integer")
+    root = ET.Element("xmeml", version="5")
+    sequence = ET.SubElement(root, "sequence", id="sequence-1")
+    ET.SubElement(sequence, "name").text = storyboard["title"]
+    total_frames = round(storyboard["duration_seconds"] * fps)
+    ET.SubElement(sequence, "duration").text = str(total_frames)
+    rate = ET.SubElement(sequence, "rate")
+    ET.SubElement(rate, "timebase").text = str(fps)
+    ET.SubElement(rate, "ntsc").text = "FALSE"
+    timecode = ET.SubElement(sequence, "timecode")
+    tc_rate = ET.SubElement(timecode, "rate")
+    ET.SubElement(tc_rate, "timebase").text = str(fps)
+    ET.SubElement(tc_rate, "ntsc").text = "FALSE"
+    ET.SubElement(timecode, "string").text = "00:00:00:00"
+    ET.SubElement(timecode, "frame").text = "0"
+    ET.SubElement(timecode, "displayformat").text = "NDF"
+
+    for scene in storyboard["scenes"]:
+        start = round(scene["start_seconds"] * fps)
+        end = round(scene["end_seconds"] * fps)
+        marker = ET.SubElement(sequence, "marker")
+        ET.SubElement(marker, "name").text = f"Scene {scene['scene']:02d} — {scene.get('shot_type', 'Shot')}"
+        ET.SubElement(marker, "comment").text = (
+            f"NARRATION: {scene.get('narration', '')}\n"
+            f"VISUAL PROMPT: {scene.get('visual_prompt', '')}\n"
+            f"ON-SCREEN TEXT: {scene.get('on_screen_text', '')}\n"
+            f"SFX: {scene.get('sfx', '')}"
+        )
+        ET.SubElement(marker, "in").text = str(start)
+        ET.SubElement(marker, "out").text = str(end)
+
+    media = ET.SubElement(sequence, "media")
+    video = ET.SubElement(media, "video")
+    video_format = ET.SubElement(video, "format")
+    sample_characteristics = ET.SubElement(video_format, "samplecharacteristics")
+    ET.SubElement(sample_characteristics, "width").text = "1920"
+    ET.SubElement(sample_characteristics, "height").text = "1080"
+    video_track = ET.SubElement(video, "track")
+    ET.SubElement(video_track, "enabled").text = "TRUE"
+    ET.SubElement(video_track, "locked").text = "FALSE"
+    audio = ET.SubElement(media, "audio")
+    audio_track = ET.SubElement(audio, "track")
+    ET.SubElement(audio_track, "enabled").text = "TRUE"
+    ET.SubElement(audio_track, "locked").text = "FALSE"
+
+    ET.indent(root, space="  ")
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode") + "\n"
