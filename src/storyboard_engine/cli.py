@@ -20,7 +20,8 @@ def main() -> None:
     build.add_argument("--mood", default=None)
     build.add_argument("--lighting", default=None)
     build.add_argument("--palette", default=None)
-    build.add_argument("--shot-types", default=None, help="Comma-separated shot types; overrides preset shot list")\n    build.add_argument("--fps", type=int, choices=[24, 25, 30, 50, 60], default=25, help="Frame rate for Premiere XML export")
+    build.add_argument("--shot-types", default=None, help="Comma-separated shot types; overrides preset shot list")
+    build.add_argument("--fps", type=int, choices=[24, 25, 30, 50, 60], default=25, help="Frame rate for Premiere XML export")
     args = parser.parse_args()
 
     script = args.script.read_text(encoding="utf-8")
