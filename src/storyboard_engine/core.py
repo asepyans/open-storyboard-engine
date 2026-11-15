@@ -444,3 +444,25 @@ def create_project_bundle(output_dir: str | Path, bundle_path: str | Path | None
         for path in files:
             archive.write(path, path.relative_to(root).as_posix())
     return destination
+
+
+def _vtt_timestamp(seconds: float) -> str:
+    """Format seconds as a WebVTT timestamp (HH:MM:SS.mmm)."""
+    milliseconds = round(seconds * 1000)
+    hours, remainder = divmod(milliseconds, 3_600_000)
+    minutes, remainder = divmod(remainder, 60_000)
+    whole_seconds, milliseconds = divmod(remainder, 1000)
+    return f"{hours:02d}:{minutes:02d}:{whole_seconds:02d}.{milliseconds:03d}"
+
+
+def export_vtt(storyboard: dict) -> str:
+    """Export scene narration as WebVTT subtitle cues."""
+    cues = ["WEBVTT", ""]
+    for scene in storyboard["scenes"]:
+        narration = scene["narration"].strip()
+        if not narration:
+            continue
+        cues.append(
+            f"{_vtt_timestamp(scene['start_seconds'])} --> {_vtt_timestamp(scene['end_seconds'])}\n{narration}\n"
+        )
+    return "\n".join(cues).rstrip() + "\n"
