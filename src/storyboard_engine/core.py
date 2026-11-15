@@ -422,3 +422,25 @@ def export_image_prompt_batch_markdown(storyboard: dict) -> str:
             "",
         ])
     return "\n".join(lines)
+
+
+def create_project_bundle(output_dir: str | Path, bundle_path: str | Path | None = None) -> Path:
+    """Package generated exports and any present media assets into a portable ZIP."""
+    import zipfile
+
+    root = Path(output_dir).resolve()
+    if not root.is_dir():
+        raise ValueError(f"output directory does not exist: {output_dir}")
+    destination = Path(bundle_path).resolve() if bundle_path is not None else root / "storyboard_bundle.zip"
+    if destination == root or root not in destination.parents:
+        # An external destination is allowed, but a destination inside the output
+        # directory must not be the same directory itself.
+        if destination == root:
+            raise ValueError("bundle destination must be a file path")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination_abs = destination
+    files = sorted(path for path in root.rglob("*") if path.is_file() and path.resolve() != destination_abs)
+    with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in files:
+            archive.write(path, path.relative_to(root).as_posix())
+    return destination
