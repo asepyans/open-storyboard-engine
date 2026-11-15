@@ -1,3 +1,4 @@
+import csv
 import json
 import re
 from pathlib import Path
@@ -240,13 +241,30 @@ def export_markdown(storyboard: dict) -> str:
     return "\n".join(lines)
 
 
-def write_exports(storyboard: dict, output_dir: str | Path) -> tuple[Path, Path]:
+def export_csv(storyboard: dict) -> str:
+    """Export scene data as UTF-8-friendly CSV for spreadsheet/editor workflows."""
+    from io import StringIO
+
+    columns = [
+        "scene", "start_seconds", "end_seconds", "duration_seconds",
+        "shot_type", "narration", "visual_prompt", "on_screen_text", "sfx",
+    ]
+    buffer = StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=columns, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(storyboard["scenes"])
+    return buffer.getvalue()
+
+
+def write_exports(storyboard: dict, output_dir: str | Path) -> tuple[Path, Path, Path]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     json_path = output / "storyboard.json"
     markdown_path = output / "storyboard.md"
+    csv_path = output / "storyboard.csv"
     json_path.write_text(
         json.dumps(storyboard, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     markdown_path.write_text(export_markdown(storyboard), encoding="utf-8")
-    return json_path, markdown_path
+    csv_path.write_text(export_csv(storyboard), encoding="utf-8-sig")
+    return json_path, markdown_path, csv_path
