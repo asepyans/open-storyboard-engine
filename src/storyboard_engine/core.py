@@ -353,3 +353,60 @@ def initialize_asset_folders(manifest: dict, project_root: str | Path) -> list[P
     for folder in folders:
         folder.mkdir(parents=True, exist_ok=True)
     return folders
+
+
+def export_image_prompt_batch(storyboard: dict) -> dict:
+    """Prepare per-scene image prompts for batch copy/paste into image generators."""
+    manifest = export_asset_manifest(storyboard)
+    prompts = []
+    for asset in manifest["assets"]:
+        prompts.append({
+            "scene": asset["scene"],
+            "filename": Path(asset["image_asset"]).name,
+            "aspect_ratio": asset["aspect_ratio"],
+            "prompt": asset["visual_prompt"],
+            "negative_prompt": "text, captions, watermark, logo, low resolution, blurry, distorted anatomy, duplicate subjects",
+            "narration": asset["narration"],
+            "start_seconds": asset["start_seconds"],
+            "end_seconds": asset["end_seconds"],
+        })
+    return {
+        "schema_version": "1.0",
+        "project_title": storyboard.get("title", "Untitled Storyboard"),
+        "scene_count": len(prompts),
+        "prompts": prompts,
+    }
+
+
+def export_image_prompt_batch_markdown(storyboard: dict) -> str:
+    """Render a human-friendly batch prompt sheet, one copyable prompt block per scene."""
+    batch = export_image_prompt_batch(storyboard)
+    lines = [
+        f"# Image Prompt Batch — {batch['project_title']}",
+        "",
+        f"Scenes: {batch['scene_count']}",
+        "",
+        "Generate one image per scene. Save each result using the listed filename.",
+        "",
+    ]
+    for item in batch["prompts"]:
+        lines.extend([
+            f"## Scene {item['scene']:02d} — {item['start_seconds']}s to {item['end_seconds']}s",
+            "",
+            f"**Filename:** {item['filename']}",
+            f"**Aspect ratio:** {item['aspect_ratio']}",
+            "",
+            "**Prompt:**",
+            "",
+            item["prompt"],
+            "",
+            "**Negative prompt (if supported):**",
+            "",
+            item["negative_prompt"],
+            "",
+            "**Narration reference:**",
+            "",
+            item["narration"],
+            "",
+        ])
+    return "\n".join(lines)
