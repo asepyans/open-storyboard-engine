@@ -365,7 +365,7 @@ def test_image_prompt_batch_export_preserves_scene_prompts_and_filenames():
     assert first["negative_prompt"]
     markdown = export_image_prompt_batch_markdown(data)
     assert "# Image Prompt Batch — Batch Demo" in markdown
-    assert "**Filename:** \`batch-demo-scene-01.png\`" in markdown
+    assert "**Filename:** " + chr(96) + "batch-demo-scene-01.png" + chr(96) in markdown
     assert "**Negative prompt (if supported):**" in markdown
 
 
