@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -264,3 +264,35 @@ def test_fcp7_xml_rejects_invalid_fps():
     data = build_storyboard("Narration.", duration_seconds=10)
     with pytest.raises(ValueError, match="fps"):
         export_fcp7_xml(data, fps=0)
+
+
+def test_asset_manifest_has_stable_paths_and_scene_metadata():
+    data = build_storyboard(
+        "Narration for first scene.\\n\\nNarration for second scene.",
+        duration_seconds=20,
+        scene_seconds=1,
+        title="Thinkman: Ocean Investigation",
+        preset="vertical-shorts",
+    )
+    manifest = export_asset_manifest(data)
+    assert manifest["schema_version"] == "1.0"
+    assert manifest["project_slug"] == "thinkman-ocean-investigation"
+    assert manifest["scene_count"] == data["scene_count"]
+    first = manifest["assets"][0]
+    assert first["scene"] == 1
+    assert first["image_asset"] == "assets/images/thinkman-ocean-investigation-scene-01.png"
+    assert first["video_asset"] == "assets/videos/thinkman-ocean-investigation-scene-01.mp4"
+    assert first["aspect_ratio"] == "9:16"
+    assert first["status"] == "planned"
+    assert first["visual_prompt"] == data["scenes"][0]["visual_prompt"]
+
+
+def test_write_exports_creates_asset_manifest(tmp_path):
+    data = build_storyboard("Some narration.", duration_seconds=10, title="Sample")
+    paths = write_exports(data, tmp_path, fps=30)
+    manifest_path = tmp_path / "asset_manifest.json"
+    assert manifest_path in paths
+    loaded = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert loaded["project_title"] == "Sample"
+    assert loaded["scene_count"] == data["scene_count"]
+    assert (tmp_path / "storyboard_premiere.xml").exists()
