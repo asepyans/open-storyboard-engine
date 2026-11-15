@@ -1,0 +1,14 @@
+{
+  "name": "Thinkman Investigative",
+  "style": "cinematic investigative documentary",
+  "aspect_ratio": "16:9",
+  "mood": "cold, tense, evidence-driven",
+  "lighting": "low-key directional light, hard shadows, subtle amber practicals",
+  "palette": "pitch black, deep slate navy, amber highlights, crimson alert accents",
+  "shot_types": [
+    "wide evidence-room establishing shot",
+    "macro close-up of document details",
+    "silhouette interview medium shot",
+    "dramatic archival photograph detail"
+  ]
+}
