@@ -1,6 +1,6 @@
 # Open Storyboard Engine
 
-A lightweight, provider-agnostic Python CLI that converts narration scripts into a structured storyboard with scene timing, cinematic visual direction, and exports to JSON and Markdown. The core is deterministic and requires no AI API key.
+A lightweight, provider-agnostic Python CLI that converts narration scripts into a structured storyboard with scene timing, cinematic visual direction, and exports to JSON, Markdown, and CSV. The core is deterministic and requires no AI API key.
 
 ## Quick start
 
@@ -10,7 +10,7 @@ storyboard-engine build examples/megalodon_id.txt --duration 90 --scene-seconds 
 pytest
 ```
 
-The command creates `output/storyboard.json` and `output/storyboard.md`.
+The command creates `output/storyboard.json`, `output/storyboard.md`, and `output/storyboard.csv`.
 
 ## Visual presets
 
@@ -57,7 +57,7 @@ storyboard-engine build examples/megalodon_id.txt \
 - `--palette`: color palette description
 - `--shot-types`: comma-separated shot list; scenes rotate through it, replacing preset shot types
 
-Explicit flags override values from the selected preset. The JSON includes the shared `visual_profile` and per-scene `shot_type`, `visual_prompt`, timestamps, narration, on-screen text, and SFX fields.
+Explicit flags override values from the selected preset. JSON contains the complete project/profile, Markdown is readable for review, and CSV gives scene rows with timestamps, narration, shot types, prompts, on-screen text, and SFX for spreadsheet/editor workflows.
 
 ## How it works
 
@@ -65,7 +65,7 @@ Explicit flags override values from the selected preset. The JSON includes the s
 - Group narration toward the target scene length (estimated at 130 words/minute).
 - Allocate integer scene durations proportionally, ensuring contiguous timestamps and exact total duration.
 - Generate deterministic visual prompt drafts using the selected preset and shot types.
-- Export structured JSON and a readable Markdown storyboard.
+- Export structured JSON, readable Markdown, and scene-oriented CSV.
 
 ## CLI
 
@@ -87,6 +87,7 @@ pytest
 - [x] Script-to-scene parsing
 - [x] Timing estimation and scene metadata
 - [x] JSON and Markdown export
+- [x] CSV scene export
 - [x] CLI and unit tests
 - [x] Cinematic visual profile and shot rotation
 - [x] Named visual presets
