@@ -1,6 +1,9 @@
+import csv
+from io import StringIO
+
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_markdown
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -132,3 +135,23 @@ def test_invalid_aspect_ratio_rejected():
 def test_invalid_shot_types_rejected():
     with pytest.raises(ValueError):
         build_storyboard("Narasi.", shot_types=[])
+
+
+def test_csv_export_has_header_and_scene_rows():
+    data = build_storyboard("Narasi pertama.\n\nNarasi kedua.", duration_seconds=20)
+    exported = export_csv(data)
+    rows = list(csv.DictReader(StringIO(exported)))
+    assert len(rows) == data["scene_count"]
+    assert rows[0]["scene"] == "1"
+    assert "visual_prompt" in rows[0]
+    assert rows[-1]["end_seconds"] == "20"
+
+
+def test_csv_export_quotes_multiline_or_comma_content():
+    data = build_storyboard(
+        "Narasi dengan koma, dan kalimat kedua.",
+        duration_seconds=20,
+        mood="misterius, menegangkan",
+    )
+    rows = list(csv.DictReader(StringIO(export_csv(data))))
+    assert rows[0]["narration"] == "Narasi dengan koma, dan kalimat kedua."
