@@ -16,6 +16,41 @@ VISUAL_PRESETS = {
 }
 
 
+
+
+PRESET_FIELDS = {"style", "aspect_ratio", "mood", "lighting", "palette", "shot_types"}
+
+
+def load_preset_file(path: str | Path) -> tuple[str, dict]:
+    """Load and validate a user-authored JSON visual preset."""
+    preset_path = Path(path)
+    try:
+        data = json.loads(preset_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Could not read preset file '{preset_path}': {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError("preset file must contain a JSON object")
+    name = data.get("name", preset_path.stem)
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("preset name must be a non-empty string")
+    unknown = set(data) - (PRESET_FIELDS | {"name"})
+    if unknown:
+        raise ValueError(f"Unknown preset fields: {', '.join(sorted(unknown))}")
+    required = PRESET_FIELDS
+    missing = required - set(data)
+    if missing:
+        raise ValueError(f"Missing preset fields: {', '.join(sorted(missing))}")
+    for field in required - {"shot_types", "aspect_ratio"}:
+        if not isinstance(data[field], str) or not data[field].strip():
+            raise ValueError(f"'{field}' must be a non-empty string")
+    if data["aspect_ratio"] not in SUPPORTED_ASPECT_RATIOS:
+        raise ValueError(f"aspect_ratio must be one of: {', '.join(sorted(SUPPORTED_ASPECT_RATIOS))}")
+    shots = data["shot_types"]
+    if not isinstance(shots, list) or not shots or any(not isinstance(shot, str) or not shot.strip() for shot in shots):
+        raise ValueError("shot_types must be a non-empty list of non-empty strings")
+    return name.strip(), {key: data[key] for key in PRESET_FIELDS}
+
+
 def word_count(text: str) -> int:
     """Count approximate narration words."""
     return len(re.findall(r"\b[\w’'-]+\b", text, flags=re.UNICODE))
@@ -54,6 +89,7 @@ def build_storyboard(
     style: str | None = None, aspect_ratio: str | None = None,
     mood: str | None = None, lighting: str | None = None,
     palette: str | None = None, shot_types: list[str] | tuple[str, ...] | None = None,
+    preset_config: dict | None = None,
 ) -> dict:
     """Build a timed storyboard with deterministic cinematic visual prompts."""
     if duration_seconds <= 0:
@@ -62,7 +98,7 @@ def build_storyboard(
         raise ValueError("scene_seconds must be greater than zero")
     if preset not in (*VISUAL_PRESETS.keys(), "custom"):
         raise ValueError(f"Unknown preset '{preset}'. Choose from: {', '.join((*VISUAL_PRESETS.keys(), 'custom'))}")
-    base = VISUAL_PRESETS.get(preset, VISUAL_PRESETS["documentary"])
+    base = preset_config if preset_config is not None else VISUAL_PRESETS.get(preset, VISUAL_PRESETS["documentary"])
     style = style if style is not None else base["style"]
     aspect_ratio = aspect_ratio if aspect_ratio is not None else base["aspect_ratio"]
     mood = mood if mood is not None else base["mood"]
