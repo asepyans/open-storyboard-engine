@@ -10,6 +10,39 @@ def word_count(text: str) -> int:
     return len(re.findall(r"\b[\w’'-]+\b", text, flags=re.UNICODE))
 
 
+def _merge_chunks(chunks: list[str], limit: int) -> list[str]:
+    """Merge adjacent chunks when there are more scenes than available seconds."""
+    if len(chunks) <= limit:
+        return chunks
+    merged = [""] * limit
+    for index, chunk in enumerate(chunks):
+        bucket = min(limit - 1, index * limit // len(chunks))
+        merged[bucket] = (merged[bucket] + " " + chunk).strip()
+    return [chunk for chunk in merged if chunk]
+
+
+def _allocate_durations(weights: list[int], total_seconds: int) -> list[int]:
+    """Allocate integer durations, with at least one second per scene."""
+    scene_count = len(weights)
+    if scene_count > total_seconds:
+        raise ValueError("scene count cannot exceed total duration in seconds")
+
+    remaining = total_seconds - scene_count
+    total_weight = sum(weights)
+    quotas = [remaining * weight / total_weight for weight in weights]
+    extras = [int(quota) for quota in quotas]
+    leftover = remaining - sum(extras)
+
+    order = sorted(
+        range(scene_count),
+        key=lambda index: (quotas[index] - extras[index], -index),
+        reverse=True,
+    )
+    for index in order[:leftover]:
+        extras[index] += 1
+    return [1 + extra for extra in extras]
+
+
 def build_storyboard(
     script: str,
     duration_seconds: int = 90,
@@ -42,33 +75,26 @@ def build_storyboard(
     if current:
         chunks.append(" ".join(current))
 
+    chunks = _merge_chunks(chunks, duration_seconds)
     weights = [max(1, word_count(chunk)) for chunk in chunks]
-    total_weight = sum(weights)
-    scenes, elapsed = [], 0
+    durations = _allocate_durations(weights, duration_seconds)
 
-    for index, (chunk, weight) in enumerate(zip(chunks, weights), start=1):
+    scenes, elapsed = [], 0
+    for index, (chunk, scene_duration) in enumerate(zip(chunks, durations), start=1):
         start = elapsed
-        if index == len(chunks):
-            end = duration_seconds
-        else:
-            end = min(
-                duration_seconds - (len(chunks) - index),
-                start + max(1, round(duration_seconds * weight / total_weight)),
-            )
+        end = start + scene_duration
         elapsed = end
         scenes.append({
             "scene": index,
             "start_seconds": start,
             "end_seconds": end,
-            "duration_seconds": end - start,
+            "duration_seconds": scene_duration,
             "narration": chunk,
             "visual_prompt": f"Cinematic documentary visual illustrating: {chunk}",
             "on_screen_text": "",
             "sfx": "",
         })
 
-    scenes[-1]["end_seconds"] = duration_seconds
-    scenes[-1]["duration_seconds"] = duration_seconds - scenes[-1]["start_seconds"]
     return {
         "title": title,
         "duration_seconds": duration_seconds,
