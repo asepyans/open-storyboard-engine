@@ -1,6 +1,6 @@
 # Open Storyboard Engine
 
-A lightweight, provider-agnostic Python CLI that converts narration scripts into a structured storyboard with scene timing, cinematic visual direction, and exports to JSON, Markdown, CSV, SRT subtitles, and Premiere-compatible XML timelines. The core is deterministic and requires no AI API key.
+A lightweight, provider-agnostic Python CLI that converts narration scripts into a structured storyboard with scene timing, cinematic visual direction, and exports to JSON, Markdown, CSV, SRT and WebVTT subtitles, and Premiere-compatible XML timelines. The core is deterministic and requires no AI API key.
 
 ## Quick start
 
@@ -10,7 +10,7 @@ storyboard-engine build examples/megalodon_id.txt --duration 90 --scene-seconds 
 pytest
 ```
 
-The command creates storyboard exports including `output/asset_manifest.json`, `output/image_prompts.json`, and `output/image_prompts.md`, plus standard asset directories under `output/assets/` (images, videos, audio, and fonts).
+The command creates storyboard exports including `output/subtitles.vtt` and `output/asset_manifest.json`, `output/image_prompts.json`, and `output/image_prompts.md`, plus standard asset directories under `output/assets/` (images, videos, audio, and fonts).
 
 ## Visual presets
 
@@ -63,7 +63,8 @@ Custom preset files cannot be combined with \`--preset\` in the same command. Yo
 - **JSON**: structured project, visual profile, scene records, timestamps.
 - **Markdown**: human-readable storyboard review.
 - **CSV**: one row per scene with timing, narration, shot type, prompt, screen text, and SFX.
-- **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format. Scene-level cue timings are approximate; use a dedicated alignment tool for word-level timing.
+- **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format.
+- **WebVTT**: subtitle cues in the `WEBVTT` format with `HH:MM:SS.mmm` timestamps, suitable for web video players. Scene-level cue timings are approximate; use a dedicated alignment tool for word-level timing.
 - **Premiere XML**: FCP7/XMEML v5 sequence with per-scene markers containing narration, visual prompt, screen text, and SFX. This provides timeline markers for review, not generated video clips.
 - **Asset manifest JSON**: per-scene asset slots with stable image/video filenames, scene timing, narration, visual prompts, aspect ratio, and planned status. The manifest describes placeholders; it does not generate the media files.\n- **Image prompt batch JSON/Markdown**: ready-to-copy image prompts per scene, matching output filenames, aspect ratio, narration references, and optional negative prompts for generators that support them.
 
@@ -136,7 +137,7 @@ pytest
 
 - [x] Script-to-scene parsing and timing
 - [x] JSON / Markdown / CSV exports
-- [x] SRT subtitle export
+- [x] SRT and WebVTT subtitle export
 - [x] Premiere-compatible XML timeline marker export
 - [x] CLI, visual profiles, named presets, and tests
 - [x] Optional custom preset files
