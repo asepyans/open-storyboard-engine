@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest, write_exports, validate_asset_manifest, initialize_asset_folders, export_image_prompt_batch, export_image_prompt_batch_markdown, create_project_bundle
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest, write_exports, validate_asset_manifest, initialize_asset_folders, export_image_prompt_batch, export_image_prompt_batch_markdown, export_pacing_report, export_pacing_report_markdown, create_project_bundle
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -423,3 +423,28 @@ def test_write_exports_creates_vtt_file(tmp_path):
     vtt_path = tmp_path / "subtitles.vtt"
     assert vtt_path in paths
     assert vtt_path.read_text(encoding="utf-8").startswith("WEBVTT")
+
+
+
+def test_pacing_report_calculates_scene_and_overall_speech_rate():
+    data = build_storyboard("One two three four five six seven eight nine ten.", duration_seconds=10)
+    report = export_pacing_report(data)
+    assert report["total_words"] == 10
+    assert report["overall_pace_wpm"] == 60.0
+    assert report["scenes"][0]["word_count"] == 10
+    assert report["scenes"][0]["pace_label"] == "slow"
+    assert report["estimated_narration_seconds"] == round(10 / 130 * 60, 2)
+
+
+def test_pacing_report_markdown_table_and_export_files(tmp_path):
+    data = build_storyboard("A short narration sample.", duration_seconds=10, title="Pacing Demo")
+    markdown = export_pacing_report_markdown(data)
+    assert "# Pacing Report — Pacing Demo" in markdown
+    assert "| Scene | Timeline | Duration | Words |" in markdown
+    paths = write_exports(data, tmp_path)
+    json_path = tmp_path / "pacing_report.json"
+    markdown_path = tmp_path / "pacing_report.md"
+    assert json_path in paths and markdown_path in paths
+    report = json.loads(json_path.read_text(encoding="utf-8"))
+    assert report["project_title"] == "Pacing Demo"
+    assert "Pacing Report" in markdown_path.read_text(encoding="utf-8")
