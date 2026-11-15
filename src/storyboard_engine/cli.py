@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from .core import VISUAL_PRESETS, build_storyboard, write_exports
+from .core import VISUAL_PRESETS, build_storyboard, load_preset_file, write_exports
 
 
 def main() -> None:
@@ -14,6 +14,7 @@ def main() -> None:
     build.add_argument("--title", default=None)
     build.add_argument("--out", type=Path, default=Path("output"))
     build.add_argument("--preset", choices=[*VISUAL_PRESETS.keys(), "custom"], default="documentary")
+    build.add_argument("--preset-file", type=Path, default=None, help="Load a custom visual preset from a JSON file")
     build.add_argument("--style", default=None)
     build.add_argument("--aspect-ratio", choices=["16:9", "9:16", "1:1"], default=None)
     build.add_argument("--mood", default=None)
@@ -24,10 +25,16 @@ def main() -> None:
 
     script = args.script.read_text(encoding="utf-8")
     shot_types = None if args.shot_types is None else [shot.strip() for shot in args.shot_types.split(",") if shot.strip()]
+    preset_config = None
+    preset_name = args.preset
+    if args.preset_file is not None:
+        if args.preset != "documentary":
+            parser.error("--preset-file cannot be combined with --preset")
+        preset_name, preset_config = load_preset_file(args.preset_file)
     storyboard = build_storyboard(
         script, args.duration, args.scene_seconds,
         args.title or args.script.stem.replace("_", " ").title(),
-        preset=args.preset, style=args.style, aspect_ratio=args.aspect_ratio,
+        preset="custom" if preset_config is not None else args.preset, preset_config=preset_config, style=args.style, aspect_ratio=args.aspect_ratio,
         mood=args.mood, lighting=args.lighting, palette=args.palette, shot_types=shot_types,
     )
     for path in write_exports(storyboard, args.out):
