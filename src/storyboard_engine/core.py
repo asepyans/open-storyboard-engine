@@ -125,7 +125,7 @@ def build_storyboard(
         chunks.append(" ".join(current))
     chunks = _merge_chunks(chunks, duration_seconds)
     durations = _allocate_durations([max(1, word_count(chunk)) for chunk in chunks], duration_seconds)
-    visual_profile = {"preset": preset, "style": style, "aspect_ratio": aspect_ratio, "mood": mood, "lighting": lighting, "palette": palette, "shot_types": list(shots)}
+    visual_profile = {"preset": preset_label or preset, "style": style, "aspect_ratio": aspect_ratio, "mood": mood, "lighting": lighting, "palette": palette, "shot_types": list(shots)}
     scenes, elapsed = [], 0
     for index, (chunk, scene_duration) in enumerate(zip(chunks, durations), start=1):
         start, end = elapsed, elapsed + scene_duration
