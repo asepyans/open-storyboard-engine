@@ -10,7 +10,7 @@ storyboard-engine build examples/megalodon_id.txt --duration 90 --scene-seconds 
 pytest
 ```
 
-The command creates the storyboard exports, `output/asset_manifest.json`, and the standard asset directories under `output/assets/` (images, videos, audio, and fonts).
+The command creates storyboard exports including `output/asset_manifest.json`, `output/image_prompts.json`, and `output/image_prompts.md`, plus standard asset directories under `output/assets/` (images, videos, audio, and fonts).
 
 ## Visual presets
 
@@ -65,7 +65,7 @@ Custom preset files cannot be combined with \`--preset\` in the same command. Yo
 - **CSV**: one row per scene with timing, narration, shot type, prompt, screen text, and SFX.
 - **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format. Scene-level cue timings are approximate; use a dedicated alignment tool for word-level timing.
 - **Premiere XML**: FCP7/XMEML v5 sequence with per-scene markers containing narration, visual prompt, screen text, and SFX. This provides timeline markers for review, not generated video clips.
-- **Asset manifest JSON**: per-scene asset slots with stable image/video filenames, scene timing, narration, visual prompts, aspect ratio, and planned status. The manifest describes placeholders; it does not generate the media files.
+- **Asset manifest JSON**: per-scene asset slots with stable image/video filenames, scene timing, narration, visual prompts, aspect ratio, and planned status. The manifest describes placeholders; it does not generate the media files.\n- **Image prompt batch JSON/Markdown**: ready-to-copy image prompts per scene, matching output filenames, aspect ratio, narration references, and optional negative prompts for generators that support them.
 
 
 ## Asset folder setup and validation
@@ -84,6 +84,16 @@ storyboard-engine validate-assets output/asset_manifest.json --project-root outp
 \`\`\`
 
 The validation report lists asset presence per scene and counts present/missing images and videos. Unsafe paths (absolute paths or parent traversal), malformed entries, and unsupported manifest schema versions are rejected.
+
+
+## Image prompt batch export
+
+Each storyboard build also writes a batch prompt sheet:
+
+- \`output/image_prompts.json\`: structured prompt entries for downstream tools or batch workflows.
+- \`output/image_prompts.md\`: human-readable prompt sheet with one scene section per image, including the intended filename and negative prompt.
+
+The prompt export is provider-agnostic. It prepares prompt text and metadata; it does not call an image-generation API or create image files. Save generated images to the matching path under \`output/assets/images/\`.
 
 ## How it works
 
@@ -113,7 +123,7 @@ pytest
 - [x] Premiere-compatible XML timeline marker export
 - [x] CLI, visual profiles, named presets, and tests
 - [x] Optional custom preset files
-- [x] Per-scene asset manifest with predictable filenames
+- [x] Per-scene asset manifest with predictable filenames\n- [x] Batch image prompt JSON/Markdown export
 - [ ] Editing-tool import/export adapters
 - [ ] Community language presets
 
