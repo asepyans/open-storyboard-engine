@@ -3,7 +3,7 @@ from io import StringIO
 
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -155,3 +155,26 @@ def test_csv_export_quotes_multiline_or_comma_content():
     )
     rows = list(csv.DictReader(StringIO(export_csv(data))))
     assert rows[0]["narration"] == "Narasi dengan koma, dan kalimat kedua."
+
+from storyboard_engine.core import export_srt
+
+
+def test_srt_export_uses_scene_timestamps_and_narration():
+    data = build_storyboard("Narasi pembuka.\\n\\nNarasi kedua.", duration_seconds=20, scene_seconds=10)
+    srt = export_srt(data)
+    assert "1\\n00:00:00,000 --> 00:00:10,000\\nNarasi pembuka." in srt
+    assert "2\\n00:00:10,000 --> 00:00:20,000\\nNarasi kedua." in srt
+
+
+def test_srt_timestamp_handles_hour_boundary():
+    data = {
+        "scenes": [{"scene": 1, "start_seconds": 3599.5, "end_seconds": 3601,
+                    "narration": "Crosses an hour boundary."}]
+    }
+    srt = export_srt(data)
+    assert "00:59:59,500 --> 01:00:01,000" in srt
+
+
+def test_srt_export_skips_empty_narration():
+    data = {"scenes": [{"scene": 1, "start_seconds": 0, "end_seconds": 5, "narration": " "}]}
+    assert export_srt(data) == ""
