@@ -230,6 +230,52 @@ def export_asset_manifest(storyboard: dict) -> dict:
     }
 
 
+def export_pacing_report(storyboard: dict) -> dict:
+    """Summarize narration load and estimated speaking pace for each scene."""
+    scenes = []
+    total_words = 0
+    total_seconds = storyboard.get("duration_seconds", 0)
+    for scene in storyboard["scenes"]:
+        narration = scene.get("narration", "").strip()
+        words = word_count(narration)
+        duration = scene.get("duration_seconds", scene["end_seconds"] - scene["start_seconds"])
+        estimated_speech_seconds = round(words / WORDS_PER_MINUTE * 60, 2)
+        pace_wpm = round(words / duration * 60, 1) if duration > 0 else 0.0
+        scenes.append({
+            "scene": scene["scene"], "start_seconds": scene["start_seconds"],
+            "end_seconds": scene["end_seconds"], "duration_seconds": duration,
+            "word_count": words, "estimated_speech_seconds": estimated_speech_seconds,
+            "pace_wpm": pace_wpm,
+            "pace_label": "fast" if pace_wpm > 160 else "slow" if pace_wpm < 100 else "steady",
+        })
+        total_words += words
+    overall_wpm = round(total_words / total_seconds * 60, 1) if total_seconds > 0 else 0.0
+    return {
+        "schema_version": "1.0", "project_title": storyboard.get("title", "Untitled Storyboard"),
+        "duration_seconds": total_seconds, "scene_count": len(scenes), "total_words": total_words,
+        "overall_pace_wpm": overall_wpm,
+        "estimated_narration_seconds": round(total_words / WORDS_PER_MINUTE * 60, 2),
+        "scenes": scenes,
+    }
+
+
+def export_pacing_report_markdown(storyboard: dict) -> str:
+    """Render the pacing report as a concise Markdown table."""
+    report = export_pacing_report(storyboard)
+    lines = [f"# Pacing Report — {report['project_title']}", "",
+             f"- **Duration:** {report['duration_seconds']} seconds",
+             f"- **Scenes:** {report['scene_count']}", f"- **Narration words:** {report['total_words']}",
+             f"- **Overall pace:** {report['overall_pace_wpm']} WPM",
+             f"- **Estimated narration time:** {report['estimated_narration_seconds']} seconds", "",
+             "| Scene | Timeline | Duration | Words | Estimated speech | Pace (WPM) | Label |",
+             "| ---: | --- | ---: | ---: | ---: | ---: | --- |"]
+    for scene in report["scenes"]:
+        lines.append(f"| {scene['scene']} | {scene['start_seconds']}–{scene['end_seconds']}s | "
+                     f"{scene['duration_seconds']}s | {scene['word_count']} | "
+                     f"{scene['estimated_speech_seconds']}s | {scene['pace_wpm']} | {scene['pace_label']} |")
+    return "\\n".join(lines) + "\\n"
+
+
 def write_exports(storyboard: dict, output_dir: str | Path, fps: int = 25) -> tuple[Path, ...]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
