@@ -3,6 +3,14 @@ import re
 from pathlib import Path
 
 WORDS_PER_MINUTE = 130
+SHOT_VARIATIONS = (
+    "wide establishing shot",
+    "medium cinematic shot",
+    "close-up detail shot",
+    "low-angle dramatic shot",
+    "overhead composition",
+    "telephoto documentary shot",
+)
 
 
 def word_count(text: str) -> int:
@@ -26,13 +34,11 @@ def _allocate_durations(weights: list[int], total_seconds: int) -> list[int]:
     scene_count = len(weights)
     if scene_count > total_seconds:
         raise ValueError("scene count cannot exceed total duration in seconds")
-
     remaining = total_seconds - scene_count
     total_weight = sum(weights)
     quotas = [remaining * weight / total_weight for weight in weights]
     extras = [int(quota) for quota in quotas]
     leftover = remaining - sum(extras)
-
     order = sorted(
         range(scene_count),
         key=lambda index: (quotas[index] - extras[index], -index),
@@ -43,17 +49,45 @@ def _allocate_durations(weights: list[int], total_seconds: int) -> list[int]:
     return [1 + extra for extra in extras]
 
 
+def build_visual_prompt(
+    narration: str,
+    scene_number: int = 1,
+    visual_style: str = "cinematic documentary",
+    aspect_ratio: str = "16:9",
+    mood: str = "investigative and atmospheric",
+    lighting: str = "dramatic natural lighting",
+    color_palette: str = "deep slate navy, charcoal black, restrained amber accents",
+) -> str:
+    """Create a structured image-generation prompt for one storyboard scene."""
+    shot = SHOT_VARIATIONS[(max(1, scene_number) - 1) % len(SHOT_VARIATIONS)]
+    return (
+        f"{visual_style}; {shot}; visual subject grounded in this narration: "
+        f"{narration}. Mood: {mood}. Lighting: {lighting}. "
+        f"Color palette: {color_palette}. Composition: clear focal subject, "
+        f"layered depth, cinematic framing, realistic material detail. "
+        f"Aspect ratio {aspect_ratio}. Documentary-quality image, coherent "
+        "environment, no captions, no lettering, no watermark."
+    )
+
+
 def build_storyboard(
     script: str,
     duration_seconds: int = 90,
     scene_seconds: int = 10,
     title: str = "Untitled Storyboard",
+    visual_style: str = "cinematic documentary",
+    aspect_ratio: str = "16:9",
+    mood: str = "investigative and atmospheric",
+    lighting: str = "dramatic natural lighting",
+    color_palette: str = "deep slate navy, charcoal black, restrained amber accents",
 ) -> dict:
-    """Build a timed storyboard from script paragraphs."""
+    """Build a timed storyboard with configurable visual prompt direction."""
     if duration_seconds <= 0:
         raise ValueError("duration_seconds must be greater than zero")
     if scene_seconds <= 0:
         raise ValueError("scene_seconds must be greater than zero")
+    if not aspect_ratio.strip():
+        raise ValueError("aspect_ratio must not be empty")
 
     paragraphs = [
         part.strip()
@@ -90,7 +124,16 @@ def build_storyboard(
             "end_seconds": end,
             "duration_seconds": scene_duration,
             "narration": chunk,
-            "visual_prompt": f"Cinematic documentary visual illustrating: {chunk}",
+            "visual_prompt": build_visual_prompt(
+                chunk,
+                scene_number=index,
+                visual_style=visual_style,
+                aspect_ratio=aspect_ratio,
+                mood=mood,
+                lighting=lighting,
+                color_palette=color_palette,
+            ),
+            "shot_type": SHOT_VARIATIONS[(index - 1) % len(SHOT_VARIATIONS)],
             "on_screen_text": "",
             "sfx": "",
         })
@@ -99,6 +142,13 @@ def build_storyboard(
         "title": title,
         "duration_seconds": duration_seconds,
         "language": "id",
+        "visual_settings": {
+            "style": visual_style,
+            "aspect_ratio": aspect_ratio,
+            "mood": mood,
+            "lighting": lighting,
+            "color_palette": color_palette,
+        },
         "scene_count": len(scenes),
         "scenes": scenes,
     }
@@ -112,11 +162,18 @@ def export_markdown(storyboard: dict) -> str:
         f"**Scene count:** {storyboard['scene_count']}",
         "",
     ]
+    visual_settings = storyboard.get("visual_settings")
+    if visual_settings:
+        lines.extend(["## Visual settings", ""])
+        for key, value in visual_settings.items():
+            lines.extend([f"- **{key.replace('_', ' ').title()}:** {value}", ""])
     for scene in storyboard["scenes"]:
         lines.extend([
             f"## Scene {scene['scene']:02d} — {scene['start_seconds']}s–{scene['end_seconds']}s",
             "",
             f"**Narration:** {scene['narration']}",
+            "",
+            f"**Shot type:** {scene.get('shot_type', '—')}",
             "",
             f"**Visual prompt:** {scene['visual_prompt']}",
             "",
