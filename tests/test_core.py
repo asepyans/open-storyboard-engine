@@ -3,7 +3,7 @@ from io import StringIO
 
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -178,3 +178,67 @@ def test_srt_timestamp_handles_hour_boundary():
 def test_srt_export_skips_empty_narration():
     data = {"scenes": [{"scene": 1, "start_seconds": 0, "end_seconds": 5, "narration": " "}]}
     assert export_srt(data) == ""
+
+
+def _custom_preset_payload():
+    return {
+        "name": "Thinkman Investigative",
+        "style": "cinematic investigative editorial",
+        "aspect_ratio": "16:9",
+        "mood": "cold, focused, tense",
+        "lighting": "hard side light with shadow",
+        "palette": "charcoal, white, amber",
+        "shot_types": ["evidence wide shot", "document close-up"],
+    }
+
+
+def test_load_custom_preset_file_and_build_storyboard(tmp_path):
+    preset_file = tmp_path / "thinkman.json"
+    preset_file.write_text(json.dumps(_custom_preset_payload()), encoding="utf-8")
+    name, config = load_preset_file(preset_file)
+    data = build_storyboard("Narasi investigasi.", duration_seconds=12, preset="custom",
+                            preset_config=config, preset_label=name)
+    assert data["visual_profile"]["preset"] == "Thinkman Investigative"
+    assert data["visual_profile"]["palette"] == "charcoal, white, amber"
+    assert data["scenes"][0]["shot_type"] == "evidence wide shot"
+
+
+def test_custom_preset_rejects_missing_fields(tmp_path):
+    preset_file = tmp_path / "incomplete.json"
+    preset_file.write_text(json.dumps({"name": "Incomplete"}), encoding="utf-8")
+    with pytest.raises(ValueError, match="Missing preset fields"):
+        load_preset_file(preset_file)
+
+
+def test_custom_preset_rejects_unknown_fields(tmp_path):
+    payload = _custom_preset_payload()
+    payload["unexpected"] = "value"
+    preset_file = tmp_path / "unknown.json"
+    preset_file.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="Unknown preset fields"):
+        load_preset_file(preset_file)
+
+
+def test_custom_preset_rejects_invalid_ratio(tmp_path):
+    payload = _custom_preset_payload()
+    payload["aspect_ratio"] = "4:3"
+    preset_file = tmp_path / "bad-ratio.json"
+    preset_file.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="aspect_ratio"):
+        load_preset_file(preset_file)
+
+
+def test_custom_preset_rejects_empty_shot_list(tmp_path):
+    payload = _custom_preset_payload()
+    payload["shot_types"] = []
+    preset_file = tmp_path / "no-shots.json"
+    preset_file.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="shot_types"):
+        load_preset_file(preset_file)
+
+
+def test_custom_preset_reports_invalid_json(tmp_path):
+    preset_file = tmp_path / "invalid.json"
+    preset_file.write_text("{not valid json", encoding="utf-8")
+    with pytest.raises(ValueError, match="Could not read preset file"):
+        load_preset_file(preset_file)
