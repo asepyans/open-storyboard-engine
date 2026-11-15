@@ -189,10 +189,51 @@ def export_srt(storyboard: dict) -> str:
     return "\n\n".join(cues) + ("\n" if cues else "")
 
 
-def write_exports(storyboard: dict, output_dir: str | Path, fps: int = 25) -> tuple[Path, Path, Path, Path, Path]:
+
+
+def _safe_filename(value: str) -> str:
+    """Convert a title into a portable lowercase filename stem."""
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", value.strip().lower()).strip("-")
+    return slug or "storyboard"
+
+
+def export_asset_manifest(storyboard: dict) -> dict:
+    """Create a stable JSON manifest describing per-scene visual asset slots."""
+    project_slug = _safe_filename(storyboard.get("title", "storyboard"))
+    profile = storyboard.get("visual_profile", {})
+    ratio = profile.get("aspect_ratio", "16:9")
+    assets = []
+    for scene in storyboard["scenes"]:
+        scene_number = int(scene["scene"])
+        filename_stem = f"{project_slug}-scene-{scene_number:02d}"
+        assets.append({
+            "scene": scene_number,
+            "start_seconds": scene["start_seconds"],
+            "end_seconds": scene["end_seconds"],
+            "duration_seconds": scene.get("duration_seconds", scene["end_seconds"] - scene["start_seconds"]),
+            "narration": scene.get("narration", ""),
+            "shot_type": scene.get("shot_type", ""),
+            "visual_prompt": scene.get("visual_prompt", ""),
+            "aspect_ratio": ratio,
+            "image_asset": f"assets/images/{filename_stem}.png",
+            "video_asset": f"assets/videos/{filename_stem}.mp4",
+            "status": "planned",
+        })
+    return {
+        "schema_version": "1.0",
+        "project_title": storyboard.get("title", "Untitled Storyboard"),
+        "project_slug": project_slug,
+        "duration_seconds": storyboard["duration_seconds"],
+        "scene_count": len(assets),
+        "visual_profile": profile,
+        "assets": assets,
+    }
+
+
+def write_exports(storyboard: dict, output_dir: str | Path, fps: int = 25) -> tuple[Path, ...]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    json_path, markdown_path, csv_path, srt_path, xml_path = (output / "storyboard.json", output / "storyboard.md", output / "storyboard.csv", output / "subtitles.srt", output / "storyboard_premiere.xml")
+    json_path, markdown_path, csv_path, srt_path, xml_path, manifest_path = (output / "storyboard.json", output / "storyboard.md", output / "storyboard.csv", output / "subtitles.srt", output / "storyboard_premiere.xml", output / "asset_manifest.json")
     json_path.write_text(json.dumps(storyboard, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_path.write_text(export_markdown(storyboard), encoding="utf-8")
     csv_path.write_text(export_csv(storyboard), encoding="utf-8-sig")
