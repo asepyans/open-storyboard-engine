@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from .core import VISUAL_PRESETS, build_storyboard, load_preset_file, write_exports
+import json\n\nfrom .core import VISUAL_PRESETS, build_storyboard, load_preset_file, write_exports, initialize_asset_folders, validate_asset_manifest
 
 
 def main() -> None:
