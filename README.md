@@ -10,7 +10,7 @@ storyboard-engine build examples/megalodon_id.txt --duration 90 --scene-seconds 
 pytest
 ```
 
-The command creates `output/storyboard.json`, `output/storyboard.md`, `output/storyboard.csv`, `output/subtitles.srt`, and `output/storyboard_premiere.xml`.
+The command creates the storyboard exports, `output/asset_manifest.json`, and the standard asset directories under `output/assets/` (images, videos, audio, and fonts).
 
 ## Visual presets
 
@@ -43,18 +43,18 @@ Optional flags: `--style`, `--aspect-ratio` (`16:9`, `9:16`, `1:1`), `--mood`, `
 
 ## Custom preset files
 
-You can save your own visual direction in a JSON file and reuse it without editing Python source. A complete preset file contains a name and these fields: \`style\`, \`aspect_ratio\`, \`mood\`, \`lighting\`, \`palette\`, and a non-empty \`shot_types\` list. Aspect ratio must be \`16:9\`, \`9:16\`, or \`1:1\`; unknown or missing fields are rejected with a helpful validation error.
+You can save your own visual direction in a JSON file and reuse it without editing Python source. A complete preset file contains a name and these fields: **style**, **aspect_ratio**, **mood**, **lighting**, **palette**, and a non-empty **shot_types** list. Aspect ratio must be \`16:9\`, \`9:16\`, or \`1:1\`; unknown or missing fields are rejected with a helpful validation error.
 
-Example preset included in this repository: \`examples/presets/thinkman-investigative.json\`.
+Example preset included in this repository: **examples/presets/thinkman-investigative.json**.
 
 Run the engine with your preset file:
 
-\`\`\`bash
-storyboard-engine build examples/megalodon_id.txt \\
+```bash
+storyboard-engine build examples/megalodon_id.txt \
   --duration 90 --scene-seconds 10 \\
   --preset-file examples/presets/thinkman-investigative.json \\
   --out output
-\`\`\`
+```
 
 Custom preset files cannot be combined with \`--preset\` in the same command. You can still use individual CLI flags such as \`--mood\` or \`--palette\` to override a loaded preset's values. The preset's \`name\` is included in the storyboard's visual profile metadata.
 
@@ -63,15 +63,34 @@ Custom preset files cannot be combined with \`--preset\` in the same command. Yo
 - **JSON**: structured project, visual profile, scene records, timestamps.
 - **Markdown**: human-readable storyboard review.
 - **CSV**: one row per scene with timing, narration, shot type, prompt, screen text, and SFX.
-- **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format. Scene-level cue timings are approximate; use a dedicated alignment tool for word-level timing.\n- **Premiere XML**: FCP7/XMEML v5 sequence with per-scene markers containing narration, visual prompt, screen text, and SFX. This provides timeline markers for review, not generated video clips.
+- **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format. Scene-level cue timings are approximate; use a dedicated alignment tool for word-level timing.
+- **Premiere XML**: FCP7/XMEML v5 sequence with per-scene markers containing narration, visual prompt, screen text, and SFX. This provides timeline markers for review, not generated video clips.
 - **Asset manifest JSON**: per-scene asset slots with stable image/video filenames, scene timing, narration, visual prompts, aspect ratio, and planned status. The manifest describes placeholders; it does not generate the media files.
+
+
+## Asset folder setup and validation
+
+A build automatically initializes these folders under the output directory:
+
+- \`assets/images/\`
+- \`assets/videos/\`
+- \`assets/audio/\`
+- \`assets/fonts/\`
+
+The manifest contains planned image/video paths for each scene. Use the validator to check which media files exist yet. Missing planned assets are reported without treating them as a malformed manifest:
+
+\`\`\`bash
+storyboard-engine validate-assets output/asset_manifest.json --project-root output
+\`\`\`
+
+The validation report lists asset presence per scene and counts present/missing images and videos. Unsafe paths (absolute paths or parent traversal), malformed entries, and unsupported manifest schema versions are rejected.
 
 ## How it works
 
 1. Split script into paragraphs and group narration toward the target scene length (estimated at 130 words/minute).
 2. Allocate integer scene durations proportionally, with contiguous timestamps and the exact requested total duration.
 3. Generate deterministic visual prompt drafts based on preset and shot sequence.
-4. Export JSON, Markdown, CSV, SRT, Premiere XML, and the asset manifest.
+4. Export JSON, Markdown, CSV, SRT, Premiere XML, and the asset manifest.\n5. Initialize the standard media folders and allow validation of the manifest against files on disk.
 
 ## CLI
 
@@ -90,7 +109,8 @@ pytest
 
 - [x] Script-to-scene parsing and timing
 - [x] JSON / Markdown / CSV exports
-- [x] SRT subtitle export\n- [x] Premiere-compatible XML timeline marker export
+- [x] SRT subtitle export
+- [x] Premiere-compatible XML timeline marker export
 - [x] CLI, visual profiles, named presets, and tests
 - [x] Optional custom preset files
 - [x] Per-scene asset manifest with predictable filenames
