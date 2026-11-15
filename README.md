@@ -1,6 +1,6 @@
 # Open Storyboard Engine
 
-A lightweight, provider-agnostic Python CLI that converts narration scripts into a structured storyboard with scene timing, cinematic visual direction, and exports to JSON, Markdown, CSV, and SRT subtitles. The core is deterministic and requires no AI API key.
+A lightweight, provider-agnostic Python CLI that converts narration scripts into a structured storyboard with scene timing, cinematic visual direction, and exports to JSON, Markdown, CSV, SRT subtitles, and Premiere-compatible XML timelines. The core is deterministic and requires no AI API key.
 
 ## Quick start
 
@@ -10,7 +10,7 @@ storyboard-engine build examples/megalodon_id.txt --duration 90 --scene-seconds 
 pytest
 ```
 
-The command creates `output/storyboard.json`, `output/storyboard.md`, `output/storyboard.csv`, and `output/subtitles.srt`.
+The command creates `output/storyboard.json`, `output/storyboard.md`, `output/storyboard.csv`, `output/subtitles.srt`, and `output/storyboard_premiere.xml`.
 
 ## Visual presets
 
@@ -38,7 +38,7 @@ storyboard-engine build examples/megalodon_id.txt \
   --palette "deep navy and amber" --out output
 ```
 
-Optional flags: `--style`, `--aspect-ratio` (`16:9`, `9:16`, `1:1`), `--mood`, `--lighting`, `--palette`, and `--shot-types` (comma-separated override list).
+Optional flags: `--style`, `--aspect-ratio` (`16:9`, `9:16`, `1:1`), `--mood`, `--lighting`, `--palette`, `--shot-types` (comma-separated override list), and `--fps` (24, 25, 30, 50, or 60; default 25 for XML).
 
 
 ## Custom preset files
@@ -63,7 +63,7 @@ Custom preset files cannot be combined with \`--preset\` in the same command. Yo
 - **JSON**: structured project, visual profile, scene records, timestamps.
 - **Markdown**: human-readable storyboard review.
 - **CSV**: one row per scene with timing, narration, shot type, prompt, screen text, and SFX.
-- **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format. Note that scene-level cue timings are approximate; for word-level subtitle timing, use a dedicated alignment tool.
+- **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format. Scene-level cue timings are approximate; use a dedicated alignment tool for word-level timing.\n- **Premiere XML**: FCP7/XMEML v5 sequence with per-scene markers containing narration, visual prompt, screen text, and SFX. This provides timeline markers for review, not generated video clips.
 
 ## How it works
 
@@ -89,7 +89,7 @@ pytest
 
 - [x] Script-to-scene parsing and timing
 - [x] JSON / Markdown / CSV exports
-- [x] SRT subtitle export
+- [x] SRT subtitle export\n- [x] Premiere-compatible XML timeline marker export
 - [x] CLI, visual profiles, named presets, and tests
 - [ ] Optional custom preset files
 - [ ] Editing-tool import/export adapters
