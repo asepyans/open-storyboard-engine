@@ -66,7 +66,7 @@ Custom preset files cannot be combined with \`--preset\` in the same command. Yo
 - **SRT**: subtitle cues generated from narration using each scene's timeline. Timestamps use the standard `HH:MM:SS,mmm` format.
 - **WebVTT**: subtitle cues in the `WEBVTT` format with `HH:MM:SS.mmm` timestamps, suitable for web video players. Scene-level cue timings are approximate; use a dedicated alignment tool for word-level timing.
 - **Premiere XML**: FCP7/XMEML v5 sequence with per-scene markers containing narration, visual prompt, screen text, and SFX. This provides timeline markers for review, not generated video clips.
-- **Asset manifest JSON**: per-scene asset slots with stable image/video filenames, scene timing, narration, visual prompts, aspect ratio, and planned status. The manifest describes placeholders; it does not generate the media files.\n- **Image prompt batch JSON/Markdown**: ready-to-copy image prompts per scene, matching output filenames, aspect ratio, narration references, and optional negative prompts for generators that support them.
+- **Asset manifest JSON**: per-scene asset slots with stable image/video filenames, scene timing, narration, visual prompts, aspect ratio, and planned status. The manifest describes placeholders; it does not generate the media files.\n- **Pacing report JSON/Markdown**: scene-by-scene word counts, estimated speech duration, speaking rate (WPM), and a slow/steady/fast label to help review narration pacing. Rates are estimates based on the engine's 130 WPM baseline.\n- **Image prompt batch JSON/Markdown**: ready-to-copy image prompts per scene, matching output filenames, aspect ratio, narration references, and optional negative prompts for generators that support them.
 
 
 ## Asset folder setup and validation
@@ -118,7 +118,7 @@ The bundle preserves relative paths, including the generated JSON/Markdown/CSV/S
 1. Split script into paragraphs and group narration toward the target scene length (estimated at 130 words/minute).
 2. Allocate integer scene durations proportionally, with contiguous timestamps and the exact requested total duration.
 3. Generate deterministic visual prompt drafts based on preset and shot sequence.
-4. Export JSON, Markdown, CSV, SRT, Premiere XML, the asset manifest, and batch image prompt sheets.\n5. Initialize standard media folders, validate the manifest, and optionally package the project into a portable ZIP.
+4. Export JSON, Markdown, CSV, SRT, Premiere XML, the asset manifest, and batch image prompt sheets, plus scene-level narration pacing reports.\n5. Initialize standard media folders, validate the manifest, and optionally package the project into a portable ZIP.
 
 ## CLI
 
