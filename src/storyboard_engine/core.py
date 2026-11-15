@@ -238,7 +238,9 @@ def write_exports(storyboard: dict, output_dir: str | Path, fps: int = 25) -> tu
     markdown_path.write_text(export_markdown(storyboard), encoding="utf-8")
     csv_path.write_text(export_csv(storyboard), encoding="utf-8-sig")
     srt_path.write_text(export_srt(storyboard), encoding="utf-8-sig")
-    return json_path, markdown_path, csv_path, srt_path
+    xml_path.write_text(export_fcp7_xml(storyboard, fps=fps), encoding="utf-8")
+    manifest_path.write_text(json.dumps(export_asset_manifest(storyboard), ensure_ascii=False, indent=2), encoding="utf-8")
+    return json_path, markdown_path, csv_path, srt_path, xml_path, manifest_path
 
 
 def export_fcp7_xml(storyboard: dict, fps: int = 25) -> str:
