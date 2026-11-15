@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest, write_exports, validate_asset_manifest, initialize_asset_folders, export_image_prompt_batch, export_image_prompt_batch_markdown
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest, write_exports, validate_asset_manifest, initialize_asset_folders, export_image_prompt_batch, export_image_prompt_batch_markdown, create_project_bundle
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -380,3 +380,25 @@ def test_write_exports_creates_batch_prompt_files(tmp_path):
     assert payload["project_title"] == "Batch Output"
     assert payload["prompts"][0]["filename"] == "batch-output-scene-01.png"
     assert "Image Prompt Batch" in markdown_path.read_text(encoding="utf-8")
+
+
+def test_create_project_bundle_includes_exports_and_assets(tmp_path):
+    data = build_storyboard("Bundle sample narration.", duration_seconds=10, title="Bundle Sample")
+    write_exports(data, tmp_path)
+    initialize_asset_folders(export_asset_manifest(data), tmp_path)
+    image_file = tmp_path / "assets" / "images" / "sample.png"
+    image_file.write_bytes(b"image fixture")
+    bundle_path = create_project_bundle(tmp_path)
+    assert bundle_path == tmp_path.resolve() / "storyboard_bundle.zip"
+    import zipfile
+    with zipfile.ZipFile(bundle_path) as archive:
+        names = set(archive.namelist())
+    assert "storyboard.json" in names
+    assert "image_prompts.md" in names
+    assert "assets/images/sample.png" in names
+    assert "assets/videos" not in names
+
+
+def test_create_project_bundle_rejects_directory_as_destination(tmp_path):
+    with pytest.raises(ValueError, match="file path"):
+        create_project_bundle(tmp_path, tmp_path)
