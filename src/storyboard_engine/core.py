@@ -233,7 +233,7 @@ def export_asset_manifest(storyboard: dict) -> dict:
 def write_exports(storyboard: dict, output_dir: str | Path, fps: int = 25) -> tuple[Path, ...]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    json_path, markdown_path, csv_path, srt_path, xml_path, manifest_path = (output / "storyboard.json", output / "storyboard.md", output / "storyboard.csv", output / "subtitles.srt", output / "storyboard_premiere.xml", output / "asset_manifest.json")
+    json_path, markdown_path, csv_path, srt_path, xml_path, manifest_path, image_prompts_json_path, image_prompts_md_path = (output / "storyboard.json", output / "storyboard.md", output / "storyboard.csv", output / "subtitles.srt", output / "storyboard_premiere.xml", output / "asset_manifest.json", output / "image_prompts.json", output / "image_prompts.md")
     json_path.write_text(json.dumps(storyboard, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_path.write_text(export_markdown(storyboard), encoding="utf-8")
     csv_path.write_text(export_csv(storyboard), encoding="utf-8-sig")
