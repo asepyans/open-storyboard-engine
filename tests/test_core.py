@@ -161,10 +161,10 @@ from storyboard_engine.core import export_srt
 
 
 def test_srt_export_uses_scene_timestamps_and_narration():
-    data = build_storyboard("Narasi pembuka.\\n\\nNarasi kedua.", duration_seconds=20, scene_seconds=1)
+    data = build_storyboard("Narasi pembuka.\n\nNarasi kedua.", duration_seconds=20, scene_seconds=1)
     srt = export_srt(data)
-    assert "1\\n00:00:00,000 --> 00:00:10,000\\nNarasi pembuka." in srt
-    assert "2\\n00:00:10,000 --> 00:00:20,000\\nNarasi kedua." in srt
+    assert "1\n00:00:00,000 --> 00:00:10,000\nNarasi pembuka." in srt
+    assert "2\n00:00:10,000 --> 00:00:20,000\nNarasi kedua." in srt
 
 
 def test_srt_timestamp_handles_hour_boundary():
