@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest, write_exports, validate_asset_manifest, initialize_asset_folders
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest, write_exports, validate_asset_manifest, initialize_asset_folders, export_image_prompt_batch, export_image_prompt_batch_markdown
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -346,3 +346,37 @@ def test_initialize_asset_folders_creates_expected_directories(tmp_path):
     assert (tmp_path / "assets" / "videos").is_dir()
     assert (tmp_path / "assets" / "audio").is_dir()
     assert (tmp_path / "assets" / "fonts").is_dir()
+
+
+def test_image_prompt_batch_export_preserves_scene_prompts_and_filenames():
+    data = build_storyboard(
+        "Opening scene narration.\\n\\nSecond scene narration.",
+        duration_seconds=20,
+        title="Batch Demo",
+        preset="vertical-shorts",
+    )
+    batch = export_image_prompt_batch(data)
+    assert batch["schema_version"] == "1.0"
+    assert batch["scene_count"] == data["scene_count"]
+    first = batch["prompts"][0]
+    assert first["filename"] == "batch-demo-scene-01.png"
+    assert first["aspect_ratio"] == "9:16"
+    assert first["prompt"] == data["scenes"][0]["visual_prompt"]
+    assert first["negative_prompt"]
+    markdown = export_image_prompt_batch_markdown(data)
+    assert "# Image Prompt Batch — Batch Demo" in markdown
+    assert "**Filename:** \`batch-demo-scene-01.png\`" in markdown
+    assert "**Negative prompt (if supported):**" in markdown
+
+
+def test_write_exports_creates_batch_prompt_files(tmp_path):
+    data = build_storyboard("Batch export narration.", duration_seconds=10, title="Batch Output")
+    paths = write_exports(data, tmp_path)
+    json_path = tmp_path / "image_prompts.json"
+    markdown_path = tmp_path / "image_prompts.md"
+    assert json_path in paths
+    assert markdown_path in paths
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["project_title"] == "Batch Output"
+    assert payload["prompts"][0]["filename"] == "batch-output-scene-01.png"
+    assert "Image Prompt Batch" in markdown_path.read_text(encoding="utf-8")
