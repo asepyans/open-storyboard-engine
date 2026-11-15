@@ -11,6 +11,49 @@ DEFAULT_SHOT_TYPES = (
     "detail shot",
 )
 
+VISUAL_PRESETS = {
+    "documentary": {
+        "style": "cinematic documentary",
+        "aspect_ratio": "16:9",
+        "mood": "engaging, investigative, cinematic",
+        "lighting": "natural cinematic lighting with realistic shadows",
+        "palette": "earthy neutrals, deep navy, restrained amber accents",
+        "shot_types": ["wide establishing shot", "medium shot", "close-up", "detail shot"],
+    },
+    "dark-cinematic": {
+        "style": "dark cinematic realism",
+        "aspect_ratio": "16:9",
+        "mood": "ominous, tense, mysterious",
+        "lighting": "low-key lighting, volumetric beams, dramatic rim light",
+        "palette": "pitch black, deep slate navy, crimson accents",
+        "shot_types": ["dramatic wide shot", "silhouette shot", "slow close-up", "evidence detail"],
+    },
+    "photorealistic": {
+        "style": "photorealistic documentary photography",
+        "aspect_ratio": "16:9",
+        "mood": "credible, immersive, natural",
+        "lighting": "physically plausible natural light",
+        "palette": "true-to-life colors, balanced contrast",
+        "shot_types": ["wide location shot", "medium observational shot", "close-up", "macro detail"],
+    },
+    "2d-animation": {
+        "style": "clean 2D animated illustration",
+        "aspect_ratio": "9:16",
+        "mood": "expressive, clear, story-driven",
+        "lighting": "soft stylized lighting with simple shadow shapes",
+        "palette": "bold cohesive colors, high readability",
+        "shot_types": ["wide establishing illustration", "character medium shot", "expressive close-up", "prop detail"],
+    },
+    "vertical-shorts": {
+        "style": "cinematic vertical documentary",
+        "aspect_ratio": "9:16",
+        "mood": "high-impact, engaging, dramatic",
+        "lighting": "cinematic directional lighting, subject separated from background",
+        "palette": "deep contrast, vibrant controlled highlights",
+        "shot_types": ["vertical establishing shot", "medium portrait shot", "tight close-up", "dramatic detail"],
+    },
+}
+
 
 def word_count(text: str) -> int:
     """Count approximate narration words."""
@@ -56,11 +99,12 @@ def build_storyboard(
     scene_seconds: int = 10,
     title: str = "Untitled Storyboard",
     *,
-    style: str = "cinematic documentary",
-    aspect_ratio: str = "16:9",
-    mood: str = "engaging, cinematic",
-    lighting: str = "cinematic natural lighting",
-    palette: str = "balanced cinematic colors",
+    preset: str = "documentary",
+    style: str | None = None,
+    aspect_ratio: str | None = None,
+    mood: str | None = None,
+    lighting: str | None = None,
+    palette: str | None = None,
     shot_types: list[str] | tuple[str, ...] | None = None,
 ) -> dict:
     """Build a timed storyboard with deterministic cinematic visual prompts."""
@@ -68,12 +112,23 @@ def build_storyboard(
         raise ValueError("duration_seconds must be greater than zero")
     if scene_seconds <= 0:
         raise ValueError("scene_seconds must be greater than zero")
+    if preset not in (*VISUAL_PRESETS.keys(), "custom"):
+        raise ValueError(
+            f"Unknown preset '{preset}'. Choose from: {', '.join((*VISUAL_PRESETS.keys(), 'custom'))}"
+        )
+
+    base = VISUAL_PRESETS.get(preset, VISUAL_PRESETS["documentary"])
+    style = style if style is not None else base["style"]
+    aspect_ratio = aspect_ratio if aspect_ratio is not None else base["aspect_ratio"]
+    mood = mood if mood is not None else base["mood"]
+    lighting = lighting if lighting is not None else base["lighting"]
+    palette = palette if palette is not None else base["palette"]
+    shots = tuple(shot_types) if shot_types is not None else tuple(base["shot_types"])
+
     if aspect_ratio not in SUPPORTED_ASPECT_RATIOS:
         raise ValueError(
             f"aspect_ratio must be one of: {', '.join(sorted(SUPPORTED_ASPECT_RATIOS))}"
         )
-
-    shots = tuple(shot_types) if shot_types is not None else DEFAULT_SHOT_TYPES
     if not shots or any(not shot.strip() for shot in shots):
         raise ValueError("shot_types must contain at least one non-empty shot type")
 
@@ -102,6 +157,7 @@ def build_storyboard(
     durations = _allocate_durations(weights, duration_seconds)
 
     visual_profile = {
+        "preset": preset,
         "style": style,
         "aspect_ratio": aspect_ratio,
         "mood": mood,
@@ -119,7 +175,7 @@ def build_storyboard(
         visual_prompt = (
             f"{style}; {shot_type}; aspect ratio {aspect_ratio}; "
             f"mood: {mood}; lighting: {lighting}; color palette: {palette}. "
-            f"Visualize the following narration as a cinematic documentary scene: {chunk}. "
+            f"Visualize the following narration as a cinematic scene: {chunk}. "
             "Detailed composition, coherent subject, realistic environmental details. "
             "No captions, no typography, no watermark."
         )
@@ -158,6 +214,7 @@ def export_markdown(storyboard: dict) -> str:
         lines.extend([
             "## Visual profile",
             "",
+            f"- **Preset:** {profile.get('preset', 'custom')}",
             f"- **Style:** {profile['style']}",
             f"- **Aspect ratio:** {profile['aspect_ratio']}",
             f"- **Mood:** {profile['mood']}",
