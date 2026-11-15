@@ -4,7 +4,7 @@ from io import StringIO
 
 import pytest
 
-from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest, write_exports
+from storyboard_engine.core import VISUAL_PRESETS, build_storyboard, export_csv, export_markdown, export_srt, load_preset_file, export_fcp7_xml, export_asset_manifest, write_exports, validate_asset_manifest, initialize_asset_folders
 
 
 def test_scene_timing_ends_at_requested_duration():
@@ -296,3 +296,53 @@ def test_write_exports_creates_asset_manifest(tmp_path):
     assert loaded["project_title"] == "Sample"
     assert loaded["scene_count"] == data["scene_count"]
     assert (tmp_path / "storyboard_premiere.xml").exists()
+
+
+def test_validate_asset_manifest_reports_missing_files(tmp_path):
+    data = build_storyboard("Test narration.", duration_seconds=10, title="Asset Audit")
+    manifest = export_asset_manifest(data)
+    report = validate_asset_manifest(manifest, tmp_path)
+    assert report["scene_count"] == data["scene_count"]
+    assert report["checked_assets"] == data["scene_count"] * 2
+    assert report["present_assets"] == 0
+    assert report["missing_images"] == data["scene_count"]
+    assert report["missing_videos"] == data["scene_count"]
+
+
+def test_validate_asset_manifest_counts_existing_assets(tmp_path):
+    data = build_storyboard("Test narration.", duration_seconds=10, title="Asset Audit")
+    manifest = export_asset_manifest(data)
+    first = manifest["assets"][0]
+    image_path = tmp_path / first["image_asset"]
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image_path.write_bytes(b"test image placeholder")
+    report = validate_asset_manifest(manifest, tmp_path)
+    assert report["present_assets"] == 1
+    assert report["missing_images"] == data["scene_count"] - 1
+    assert report["missing_videos"] == data["scene_count"]
+
+
+def test_validate_asset_manifest_rejects_path_traversal(tmp_path):
+    data = build_storyboard("Test narration.", duration_seconds=10, title="Asset Audit")
+    manifest = export_asset_manifest(data)
+    manifest["assets"][0]["image_asset"] = "../outside.png"
+    with pytest.raises(ValueError, match="unsafe path"):
+        validate_asset_manifest(manifest, tmp_path)
+
+
+def test_validate_asset_manifest_rejects_wrong_schema(tmp_path):
+    data = export_asset_manifest(build_storyboard("Test narration.", duration_seconds=10))
+    data["schema_version"] = "2.0"
+    with pytest.raises(ValueError, match="schema_version"):
+        validate_asset_manifest(data, tmp_path)
+
+
+def test_initialize_asset_folders_creates_expected_directories(tmp_path):
+    manifest = export_asset_manifest(build_storyboard("Test narration.", duration_seconds=10))
+    folders = initialize_asset_folders(manifest, tmp_path)
+    assert len(folders) == 4
+    assert all(folder.is_dir() for folder in folders)
+    assert (tmp_path / "assets" / "images").is_dir()
+    assert (tmp_path / "assets" / "videos").is_dir()
+    assert (tmp_path / "assets" / "audio").is_dir()
+    assert (tmp_path / "assets" / "fonts").is_dir()
