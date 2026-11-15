@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from .core import build_storyboard, write_exports
+from .core import VISUAL_PRESETS, build_storyboard, write_exports
 
 
 def main() -> None:
@@ -15,25 +15,30 @@ def main() -> None:
     build.add_argument("--scene-seconds", type=int, default=10)
     build.add_argument("--title", default=None)
     build.add_argument("--out", type=Path, default=Path("output"))
-    build.add_argument("--style", default="cinematic documentary")
-    build.add_argument("--aspect-ratio", choices=["16:9", "9:16", "1:1"], default="16:9")
-    build.add_argument("--mood", default="engaging, cinematic")
-    build.add_argument("--lighting", default="cinematic natural lighting")
-    build.add_argument("--palette", default="balanced cinematic colors")
+    build.add_argument("--preset", choices=[*VISUAL_PRESETS.keys(), "custom"], default="documentary")
+    build.add_argument("--style", default=None)
+    build.add_argument("--aspect-ratio", choices=["16:9", "9:16", "1:1"], default=None)
+    build.add_argument("--mood", default=None)
+    build.add_argument("--lighting", default=None)
+    build.add_argument("--palette", default=None)
     build.add_argument(
         "--shot-types",
-        default="wide establishing shot,medium shot,close-up,detail shot",
-        help="Comma-separated shot types rotated between scenes",
+        default=None,
+        help="Comma-separated shot types; overrides the preset's shot list",
     )
     args = parser.parse_args()
 
     script = args.script.read_text(encoding="utf-8")
-    shot_types = [shot.strip() for shot in args.shot_types.split(",") if shot.strip()]
+    shot_types = None
+    if args.shot_types is not None:
+        shot_types = [shot.strip() for shot in args.shot_types.split(",") if shot.strip()]
+
     storyboard = build_storyboard(
         script,
         args.duration,
         args.scene_seconds,
         args.title or args.script.stem.replace("_", " ").title(),
+        preset=args.preset,
         style=args.style,
         aspect_ratio=args.aspect_ratio,
         mood=args.mood,
